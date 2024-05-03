@@ -30,9 +30,31 @@ jobs:
         name: dist
         path: dist
    
+    - name: Generate documentation
+      run: |
+        pip install pdoc3
+        pip install -r requirements.txt
+        pdoc --html -o docs/ openagents
+        tar -czvf docs.tar.gz docs
+
+    - name: Upload Docs Artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: docs
+        path: docs
+        
     - name: Upload release asset
       if: github.event_name == 'release'
       uses: softprops/action-gh-release@v1
       with:
-        files: dist/*.tar.gz
+        files: |
+            dist/*.tar.gz
+            docs.tar.gz
+    
         
+    - name: Deploy documentation to GitHub Pages
+      if: github.event_name == 'release'
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs/openagents
