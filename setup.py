@@ -23,7 +23,7 @@ setup(
     description='A Python SDK for OpenAgents Nodes',
     author='OpenAgentsInc',
     setup_requires=['pytest-runner'],
-    tests_require=['pytest==4.4.1'],
+    tests_require=['pytest==8.2.0'],
     install_requires=[
         "grpcio==1.62.1",
         "protobuf==5.26.1",
