@@ -1,0 +1,38 @@
+name: Build Python
+
+on:
+  push:
+    
+  release:
+    types: [published]
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write      
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.8'  
+
+    - name: Build
+      run:  python setup.py sdist
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: dist
+        path: dist
+   
+    - name: Upload release asset
+      if: github.event_name == 'release'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: dist/*.tar.gz
+        
