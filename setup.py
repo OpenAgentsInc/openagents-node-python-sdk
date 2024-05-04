@@ -3,34 +3,27 @@ import os
 
 from setuptools import find_packages, setup
 
-tag=None
-try:
-    tag = subprocess.check_output(['git', 'describe', '--tags', '--abbrev=0'], stderr=subprocess.DEVNULL).decode().strip()
-except subprocess.CalledProcessError:
-    tag = ""
+version='0.1'
 
-if tag:
-    tag = tag.lstrip('v')
-else:
-    tag = "0.1"
-
+if os.path.exists('VERSION'):
+    try:
+        with open('VERSION', 'r') as version_file:
+            version = version_file.read().strip()
+    except Exception as e:
+        print(f'Failed to read version from VERSION file: {e}')
 
 
 setup(
-    name='openagents',
+    name='openagents_node_sdk',
     packages=find_packages(),
-    version=tag,
+    version=version,
     description='A Python SDK for OpenAgents Nodes',
-    author='OpenAgentsInc',
+    author='OpenAgents',
     setup_requires=['pytest-runner'],
     tests_require=['pytest==8.2.0'],
     install_requires=[
-        "grpcio==1.62.1",
-        "protobuf==5.26.1",
+        "openagents-grpc-proto",
         "packaging",
         "requests"
-    ],
-    dependency_links=[
-        "https://github.com/OpenAgentsInc/openagents-grpc-proto/releases/download/v0.7.6/openagents_grpc_proto-PYTHON.tar.gz"
     ]
 )

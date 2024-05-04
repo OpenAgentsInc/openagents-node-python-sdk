@@ -1,5 +1,3 @@
-grpcio==1.62.1
-protobuf==5.26.1
 packaging
 requests
-https://github.com/OpenAgentsInc/openagents-grpc-proto/releases/download/v0.7.6/openagents_grpc_proto-PYTHON.tar.gz
+openagents-grpc-proto
