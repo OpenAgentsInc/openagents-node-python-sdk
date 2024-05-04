@@ -3,9 +3,13 @@
 
 A Python SDK for developing OpenAgents nodes.
 
+## Installation
 
+```bash
+pip install openagents-node-sdk
+```
 
-## Example
+## Usage Example
 
 ```python
 from openagents import JobRunner,OpenAgentsNode,NodeConfig,RunnerConfig
