@@ -19,11 +19,72 @@ class MyRunner (JobRunner):
     def __init__(self):
         # Set the runner metadata, template and filters
         super().__init__(\
-            RunnerConfig()\
-                .kind(5003)\
-                .name("My new Runner")\
-                .description("This is a new runner")
-            # .... See RunnerConfig documentation 
+            RunnerConfig(
+                meta={
+                    "kind":5003,
+                    "name":"My Action",
+                    "description":"This is a new action"
+                    "tos": "https://example.com/tos",
+                    "privacy": "https://example.com/privacy",
+                    "picture": "https://example.com/icon.png",
+                    "tags": ["tag1","tag2"]
+                    "website": "https://example.com",
+                    "author": "John Doe",
+                },
+                filters=[ 
+                    {
+                        "filterByKind":5003,
+                        #AND
+                        "filterByRunOn": "my-new-action"
+                    }, # OR
+                    {
+                        "filterByKind": 5003,
+                        #AND
+                        "filterByRunOn": "my-new-action-alt"
+                    }
+                ],
+                template="""
+                {
+                    "kind": {{meta.kind}},
+                    "created_at": {{sys.timestamp_seconds}},
+                    "tags": [
+                        ["param","run-on", "my-new-action" ],                             
+                        ["param", "k", "{{in.k}}"],
+                        ["output" , "{{out.content}}"]
+                        {{#in.queries}}
+                        ["i", "{{value}}", "{{type}}", "",  "query"],
+                        {{/in.queries}}                       
+                        ["expiration", "{{sys.expiration_timestamp_seconds}}"],
+                    ],
+                    "content":""
+                }""",
+                sockets={
+                    "in": {
+                        "k": {
+                            "type":"number",
+                            "description":"This is a number"
+                            "default": "0"
+                        },
+                        "queries": {
+                            "type":"array",
+                            "description":"This is an array of queries",
+                            "schema": {
+                                "value":{
+                                    "type":"string",
+                                    "description":"This is a query value"
+                                }# Last item in schema is repeated for any remaining items
+                            }
+                        }
+                    },
+                    "out": {
+                        "content": {
+                            "type": "string",
+                            "description": "The content of the event",
+                            "value": "application/json"
+                        }
+                    }
+                }
+            )
         )
 
 
@@ -53,7 +114,13 @@ class MyRunner (JobRunner):
 
 
 # Initialize the node
-myNode = OpenAgentsNode(NodeConfig().name("New node").version("0.0.1").description("This is a new node"))
+myNode = OpenAgentsNode(NodeConfig(
+    meta={
+        "name":"My Node",
+        "description":"This is a new node"
+        "version": "1.0"
+    }
+))
 # Register the runner (you can register multiple runners)
 myNode.registerRunner(MyRunner())
 # Start the node

@@ -8,13 +8,16 @@ class NodeConfig :
     - NODE_DESCRIPTION: The description of the node.
     - NODE_VERSION: The version of the node.
     """
-    def __init__(self):
+    def __init__(self, meta:dict=None):
         self._meta={
             "name": "OpenAgents Node",
             "description": "An new OpenAgents Node",
             "about": "An new OpenAgents Node",
             "version": "0.0.1",
         }
+        if meta:
+            for k,v in meta.items():
+                self._meta[k]=v
 
     def getMeta(self):
         self._meta["name"] = os.getenv('NODE_NAME', self._meta["name"])

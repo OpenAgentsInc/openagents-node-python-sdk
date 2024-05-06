@@ -363,7 +363,7 @@ class RunnerConfig:
     """
     A class to build an event (meta, template, socket schema, filters).
     """
-    def __init__(self):
+    def __init__(self, meta:dict=None, filters:list[dict]=None, template:str=None, sockets:dict=None):
         self._meta={
             "kind": 5003,
             "name": "An event template",
@@ -379,6 +379,23 @@ class RunnerConfig:
         self._filters=[]
         self._template=""
         self._sockets={}
+
+        if template:
+            self._template=template
+
+        if meta:
+            for k,v in meta.items():
+                self._meta[k]=v
+        
+        if sockets:
+            for k,v in sockets.items():
+                self._sockets[k]=v
+
+        if filters:    
+            for f in filters:
+                self._filters.append(f)
+        
+
 
     def getMeta(self) -> dict:
         """
