@@ -36,13 +36,16 @@ class NodeConfig :
     - NODE_DESCRIPTION: The description of the node.
     - NODE_VERSION: The version of the node.
     &#34;&#34;&#34;
-    def __init__(self):
+    def __init__(self, meta:dict=None):
         self._meta={
             &#34;name&#34;: &#34;OpenAgents Node&#34;,
             &#34;description&#34;: &#34;An new OpenAgents Node&#34;,
             &#34;about&#34;: &#34;An new OpenAgents Node&#34;,
             &#34;version&#34;: &#34;0.0.1&#34;,
         }
+        if meta:
+            for k,v in meta.items():
+                self._meta[k]=v
 
     def getMeta(self):
         self._meta[&#34;name&#34;] = os.getenv(&#39;NODE_NAME&#39;, self._meta[&#34;name&#34;])
@@ -100,6 +103,7 @@ class NodeConfig :
 <dl>
 <dt id="openagents.NodeConfig.NodeConfig"><code class="flex name class">
 <span>class <span class="ident">NodeConfig</span></span>
+<span>(</span><span>meta: dict = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>The configuration of an OpenAgents Node.
@@ -119,13 +123,16 @@ Can be configured also with environment variables:
     - NODE_DESCRIPTION: The description of the node.
     - NODE_VERSION: The version of the node.
     &#34;&#34;&#34;
-    def __init__(self):
+    def __init__(self, meta:dict=None):
         self._meta={
             &#34;name&#34;: &#34;OpenAgents Node&#34;,
             &#34;description&#34;: &#34;An new OpenAgents Node&#34;,
             &#34;about&#34;: &#34;An new OpenAgents Node&#34;,
             &#34;version&#34;: &#34;0.0.1&#34;,
         }
+        if meta:
+            for k,v in meta.items():
+                self._meta[k]=v
 
     def getMeta(self):
         self._meta[&#34;name&#34;] = os.getenv(&#39;NODE_NAME&#39;, self._meta[&#34;name&#34;])

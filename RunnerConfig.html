@@ -389,7 +389,7 @@ class RunnerConfig:
     &#34;&#34;&#34;
     A class to build an event (meta, template, socket schema, filters).
     &#34;&#34;&#34;
-    def __init__(self):
+    def __init__(self, meta:dict=None, filters:list[dict]=None, template:str=None, sockets:dict=None):
         self._meta={
             &#34;kind&#34;: 5003,
             &#34;name&#34;: &#34;An event template&#34;,
@@ -405,6 +405,23 @@ class RunnerConfig:
         self._filters=[]
         self._template=&#34;&#34;
         self._sockets={}
+
+        if template:
+            self._template=template
+
+        if meta:
+            for k,v in meta.items():
+                self._meta[k]=v
+        
+        if sockets:
+            for k,v in sockets.items():
+                self._sockets[k]=v
+
+        if filters:    
+            for f in filters:
+                self._filters.append(f)
+        
+
 
     def getMeta(self) -&gt; dict:
         &#34;&#34;&#34;
@@ -1599,6 +1616,7 @@ Note: the last specified field will be repeated for any remaining values.</p>
 </dd>
 <dt id="openagents.RunnerConfig.RunnerConfig"><code class="flex name class">
 <span>class <span class="ident">RunnerConfig</span></span>
+<span>(</span><span>meta: dict = None, filters: list[dict] = None, template: str = None, sockets: dict = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>A class to build an event (meta, template, socket schema, filters).</p></div>
@@ -1610,7 +1628,7 @@ Note: the last specified field will be repeated for any remaining values.</p>
     &#34;&#34;&#34;
     A class to build an event (meta, template, socket schema, filters).
     &#34;&#34;&#34;
-    def __init__(self):
+    def __init__(self, meta:dict=None, filters:list[dict]=None, template:str=None, sockets:dict=None):
         self._meta={
             &#34;kind&#34;: 5003,
             &#34;name&#34;: &#34;An event template&#34;,
@@ -1626,6 +1644,23 @@ Note: the last specified field will be repeated for any remaining values.</p>
         self._filters=[]
         self._template=&#34;&#34;
         self._sockets={}
+
+        if template:
+            self._template=template
+
+        if meta:
+            for k,v in meta.items():
+                self._meta[k]=v
+        
+        if sockets:
+            for k,v in sockets.items():
+                self._sockets[k]=v
+
+        if filters:    
+            for f in filters:
+                self._filters.append(f)
+        
+
 
     def getMeta(self) -&gt; dict:
         &#34;&#34;&#34;
