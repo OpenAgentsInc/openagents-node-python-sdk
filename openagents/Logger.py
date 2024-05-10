@@ -222,7 +222,7 @@ class Logger :
 
     def close(self):
         if self.oobsLogger:
-            self.obsLogger.close()
+            self.oobsLogger.close()
 
 
        
