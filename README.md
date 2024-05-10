@@ -80,6 +80,9 @@ class MyRunner (JobRunner):
             )
         )
 
+    async def init(self, node):
+       # Initialize class
+       pass
 
     async def canRun(self,ctx):
         # Custom job filtering logic
