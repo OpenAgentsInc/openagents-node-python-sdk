@@ -195,7 +195,7 @@ class JobContext:
         job=self.getJob()
         for p in job.param:
             if p.key == key:
-                return p.value
+                return p.value or default
         return default
 
     
@@ -203,7 +203,8 @@ class JobContext:
         job=self.getJob()
         for p in job.param:
             if p.key == key:
-                return p.value[0]
+                return p.value[0] or default
+        return default 
 
     def getJobInputs(self,marker:str|None=None)->list[rpc_pb2.JobInput__pb2]:
         job=self.getJob()
