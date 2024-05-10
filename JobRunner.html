@@ -36,6 +36,9 @@ import os
 import json
 import pickle
 from typing import Union
+from .JobContext import JobContext
+from .Logger import Logger
+import asyncio
 class JobRunner:
     &#34;&#34;&#34;
     An abstract class that represents a job runner.
@@ -47,222 +50,96 @@ class JobRunner:
 
     &#34;&#34;&#34;
 
-    def __init__(self, metaOrConfig: Union[dict, RunnerConfig], filters:dict=None, template:dict=None, sockets:dict=None):
-        meta=None
-        if isinstance(metaOrConfig, RunnerConfig):
-            meta = metaOrConfig.getMeta()
-            filters = metaOrConfig.getFilters()
-            template = metaOrConfig.getTemplate()
-            sockets = metaOrConfig.getSockets()
-        else:
-            meta = metaOrConfig
-        self._filters = None
-        self._node = None
-        self._job = None
-        self._disksByUrl = {}
-        self._disksById = {}
-        self._diskByName = {}
-        self._template = None
-        self._meta = None
-        self._sockets = None
-        self._nextAnnouncementTimestamp = 0
-        self._cachePath = None
-
-        self.logger = Logger(&#34;JobRunner&#34;, &#34;0&#34;, self, False)
-        self._filters = filters
-        self._meta = json.dumps(meta)
-        self._template = template
-        self._sockets = json.dumps(sockets)
+    def __init__(self, config: RunnerConfig):     
+        self._node = None    
+        self._template = config.getTemplate()
+        self._meta = config.getMeta()
+        self._sockets = config.getSockets()
+        self._filter = config.getFilter()
+        self.runInParallel=False
+        self.initialized=False
+    
+    
         
-        self._cachePath = os.getenv(&#39;CACHE_PATH&#39;,  &#34;cache&#34;)
-        if not os.path.exists(self._cachePath):
-            os.makedirs(self._cachePath)
+    
+    def getMeta(self):
+        return self._meta
+    
+    def getFilter(self):
+        return self._filter
+
+    def getTemplate(self):
+        return self._template
+    
+    def getSockets(self):
+        return self._sockets
+
+    def setRunInParallel(self, runInParallel:bool):
+        &#34;&#34;&#34;
+        Set whether the runner should run in parallel.
+        Args:
+            runInParallel (bool): True if the runner should run in parallel, False otherwise. Defaults to False.
+        &#34;&#34;&#34;
+        self.runInParallel = runInParallel
+
+    def isRunInParallel(self) -&gt; bool:
+        &#34;&#34;&#34;
+        Check if the runner should run in parallel.
+        Returns:
+            bool: True if the runner should run in parallel, False otherwise.
+        &#34;&#34;&#34;
+        return self.runInParallel
+
 
     
-    def getLogger(self) -&gt; Logger:
-        &#34;&#34;&#34;
-        Get the active logger for the runner.
-        Returns:
-            Logger: The logger for the runner.
-        &#34;&#34;&#34;
-        return self.logger
-
-    
-    async def cacheSet(self, key:str, value, version:int=0, expireAt:int=0, local=True, CHUNK_SIZE=1024*1024*15):
-        &#34;&#34;&#34;
-        Set a value in the cache.
-        Args:
-            key (str): The key of the value to set.
-            value (object): The value to set.
-            version (int): The version of the cache (if the call to cacheGet requires a different version, the cache will be considered expired). Defaults to 0.            expireAt (int): The timestamp at which the value expires. Defaults to 0.
-            expireAt (int): The timestamp at which the value expires in milliseconds. 0 = never. Defaults to 0.
-            local (bool): Whether to store the value locally or remotely. Defaults to True.
-            CHUNK_SIZE (int): The size of each chunk to write in bytes, if needed. Defaults to 1024*1024*15.
-        &#34;&#34;&#34;
-        try:
-            dataBytes = pickle.dumps(value)
-            if local:
-                fullPath = os.path.join(self._cachePath, key)
-                with open(fullPath, &#34;wb&#34;) as f:
-                    f.write(dataBytes)
-                with open(fullPath+&#34;.meta.json&#34;, &#34;w&#34;) as f:
-                    f.write(json.dumps({&#34;version&#34;:version, &#34;expireAt&#34;:expireAt}))
-            else:
-                client = self._node._getClient()
-                def write_data():
-                    for j in range(0, len(dataBytes), CHUNK_SIZE):
-                        chunk = bytes(dataBytes[j:min(j+CHUNK_SIZE, len(dataBytes))])                   
-                        request = rpc_pb2.RpcCacheSetRequest(
-                            key=key, 
-                            data=chunk,
-                            expireAt=expireAt,
-                            version=version
-                        )
-                        yield request                              
-                res=await client.cacheSet(write_data())
-                return res.success
-        except Exception as e:
-            self.getLogger().error(&#34;Error setting cache &#34;+str(e))
-            return False
-        
-
-    async def cacheGet(self, key:str, lastVersion = 0, local=True) -&gt; any:
-        &#34;&#34;&#34;
-        Get a value from the cache.
-        Args:
-            path (str): The key of the value to get.
-            lastVersion (int): The version of the cache to check. Defaults to 0.
-            local (bool): Whether to get the value locally or remotely. Defaults to True.
-        Returns:
-            any: The value of the cache.
-        &#34;&#34;&#34;
-        try:
-            if local:
-                fullPath = os.path.join(self._cachePath, key)
-                if not os.path.exists(fullPath) or not os.path.exists(fullPath+&#34;.meta.json&#34;):
-                    return None
-                with open(fullPath+&#34;.meta.json&#34;, &#34;r&#34;) as f:
-                    meta = json.loads(f.read())
-                if lastVersion &gt; 0 and meta[&#34;version&#34;] != lastVersion:
-                    return None
-                if meta[&#34;expireAt&#34;] &gt; 0 and time.time()*1000 &gt; meta[&#34;expireAt&#34;]:
-                    return None
-                with open(fullPath, &#34;rb&#34;) as f:
-                    return pickle.load(f)
-            else:
-                client = self._node._getClient()
-                bytesOut = bytearray()
-                stream = client.cacheGet(rpc_pb2.RpcCacheGetRequest(key=key, lastVersion = lastVersion))
-                async for chunk in stream:
-                    if not chunk.exists:
-                        return None
-                    bytesOut.extend(chunk.data)
-                return pickle.loads(bytesOut)
-        except Exception as e:
-            self.getLogger().error(&#34;Error getting cache &#34;+str(e))
-            return None
-
-    def _setNode(self, node):
-        self._node = node
-
-    def _setJob(self, job):
-        self._job = job
-
-    def _log(self, message:str):
-        &#34;&#34;&#34;
-        Log a message to the network.
-        Shouldn&#39;t be used directly. Use getLogger().info() instead.
-        Args:
-            message (str): The message to log.
-        &#34;&#34;&#34;
-        if self._job: message+=&#34; for job &#34;+self._job.id
-        if self._node: 
-            self._node._log(message, self._job.id if self._job else None)
-        
-
-    async def openStorage(self, url:str)-&gt;Disk:
-        &#34;&#34;&#34;
-        Open a storage disk.
-        Args:
-            url (str): The URL of the disk.
-        Returns:
-            Disk: The disk object.
-        &#34;&#34;&#34;
-
-        if url in self._disksByUrl:
-            return self._disksByUrl[url]
-        client = self._node._getClient()
-        diskId =(await client.openDisk(rpc_pb2.RpcOpenDiskRequest(url=url))).diskId
-        disk =  Disk(id=diskId, url=url, node=self._node)
-        self._disksByUrl[url] = disk
-        self._disksById[diskId] = disk
-        return disk
-
-    async def createStorage(self,name:str=None,encryptionKey:str=None,includeEncryptionKeyInUrl:str=None) -&gt; Disk:
-        &#34;&#34;&#34;
-        Create a storage disk.
-        Args:
-            name (str): Optional: The name of the disk.
-            encryptionKey (str): Optional: The encryption key of the disk.
-            includeEncryptionKeyInUrl (str): Optional: Whether to include the encryption key in the URL.
-        Returns:
-            Disk: The disk object.
-        &#34;&#34;&#34;
-        if name in self._diskByName:
-            return self._diskByName[name]
-        
-        client = self._node._getClient()
-        url = (await client.createDisk(rpc_pb2.RpcCreateDiskRequest(
-            name=name,
-            encryptionKey=encryptionKey,
-            includeEncryptionKeyInUrl=includeEncryptionKeyInUrl
-        ))).url
-        diskId =( await client.openDisk(rpc_pb2.RpcOpenDiskRequest(url=url))).diskId
-        disk = Disk(id=diskId, url=url, node=self._node)
-        self._disksByUrl[url] = disk
-        self._disksById[diskId] = disk
-        self._diskByName[name] = disk
-        return disk
-
-    async def postRun(self, job:rpc_pb2.Job__pb2.Job) -&gt; None:
+    async def postRun(self, ctx:JobContext) -&gt; None:
         &#34;&#34;&#34;
         Called after the runner has finished running.
+        Args:
+            ctx (JobContext): The context of the job.
         &#34;&#34;&#34;
-        for disk in self._disksById.values():
-            await disk.close()
-        for disk in self._disksByUrl.values():
-            await disk.close()
-        for disk in self._diskByName.values():
-            await disk.close()
-        self._disksById = {}
-        self._disksByUrl = {}
-        self._diskByName = {}
+        pass
 
-    async def canRun(self,job:rpc_pb2.Job__pb2.Job) -&gt; bool:
+    async def canRun(self,ctx:JobContext) -&gt; bool:
         &#34;&#34;&#34;
         Check if the runner can run a job.
         Args:
-            job (Job): The job to check.
+            ctx (JobContext): The context of the job.
         Returns:
             bool: True if the runner can run the job, False otherwise.
         &#34;&#34;&#34;
         return True
         
-    async def preRun(self, job:rpc_pb2.Job__pb2.Job)-&gt; None:
+    async def preRun(self, ctx:JobContext)-&gt; None:
         &#34;&#34;&#34;
         Called before the runner starts running.
+        Args:
+            ctx (JobContext): The context of the job.
         &#34;&#34;&#34;
         pass
 
-    async def loop(self)-&gt; None:
-        &#34;&#34;&#34;
-        The main loop of the runner.
-        &#34;&#34;&#34;
-        pass
-
-    async def run(self, job:rpc_pb2.Job__pb2.Job) -&gt; None:
+    async def run(self, ctx:JobContext) -&gt; None:
         &#34;&#34;&#34;
         Run a job.
+        Args:
+            ctx (JobContext): The context of the job.
+        &#34;&#34;&#34;
+        pass
+
+    async def loop(self, node: &#39;OpenAgentsNode&#39;)-&gt; None:
+        &#34;&#34;&#34;
+        The main loop of the runner.
+        Args:
+            node (OpenAgentsNode): The node
+        &#34;&#34;&#34;
+        pass
+
+
+    async def init(self,node: &#39;OpenAgentsNode&#39;)-&gt; None:
+        &#34;&#34;&#34;
+        Initialize the runner.
+        Args:
+            node (OpenAgentsNode): The node
         &#34;&#34;&#34;
         pass</code></pre>
 </details>
@@ -278,7 +155,7 @@ class JobRunner:
 <dl>
 <dt id="openagents.JobRunner.JobRunner"><code class="flex name class">
 <span>class <span class="ident">JobRunner</span></span>
-<span>(</span><span>metaOrConfig: Union[dict, <a title="openagents.RunnerConfig.RunnerConfig" href="RunnerConfig.html#openagents.RunnerConfig.RunnerConfig">RunnerConfig</a>], filters: dict = None, template: dict = None, sockets: dict = None)</span>
+<span>(</span><span>config: <a title="openagents.RunnerConfig.RunnerConfig" href="RunnerConfig.html#openagents.RunnerConfig.RunnerConfig">RunnerConfig</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>An abstract class that represents a job runner.
@@ -300,359 +177,110 @@ The internal logic of the runner uses these additional environment variables for
 
     &#34;&#34;&#34;
 
-    def __init__(self, metaOrConfig: Union[dict, RunnerConfig], filters:dict=None, template:dict=None, sockets:dict=None):
-        meta=None
-        if isinstance(metaOrConfig, RunnerConfig):
-            meta = metaOrConfig.getMeta()
-            filters = metaOrConfig.getFilters()
-            template = metaOrConfig.getTemplate()
-            sockets = metaOrConfig.getSockets()
-        else:
-            meta = metaOrConfig
-        self._filters = None
-        self._node = None
-        self._job = None
-        self._disksByUrl = {}
-        self._disksById = {}
-        self._diskByName = {}
-        self._template = None
-        self._meta = None
-        self._sockets = None
-        self._nextAnnouncementTimestamp = 0
-        self._cachePath = None
-
-        self.logger = Logger(&#34;JobRunner&#34;, &#34;0&#34;, self, False)
-        self._filters = filters
-        self._meta = json.dumps(meta)
-        self._template = template
-        self._sockets = json.dumps(sockets)
+    def __init__(self, config: RunnerConfig):     
+        self._node = None    
+        self._template = config.getTemplate()
+        self._meta = config.getMeta()
+        self._sockets = config.getSockets()
+        self._filter = config.getFilter()
+        self.runInParallel=False
+        self.initialized=False
+    
+    
         
-        self._cachePath = os.getenv(&#39;CACHE_PATH&#39;,  &#34;cache&#34;)
-        if not os.path.exists(self._cachePath):
-            os.makedirs(self._cachePath)
+    
+    def getMeta(self):
+        return self._meta
+    
+    def getFilter(self):
+        return self._filter
+
+    def getTemplate(self):
+        return self._template
+    
+    def getSockets(self):
+        return self._sockets
+
+    def setRunInParallel(self, runInParallel:bool):
+        &#34;&#34;&#34;
+        Set whether the runner should run in parallel.
+        Args:
+            runInParallel (bool): True if the runner should run in parallel, False otherwise. Defaults to False.
+        &#34;&#34;&#34;
+        self.runInParallel = runInParallel
+
+    def isRunInParallel(self) -&gt; bool:
+        &#34;&#34;&#34;
+        Check if the runner should run in parallel.
+        Returns:
+            bool: True if the runner should run in parallel, False otherwise.
+        &#34;&#34;&#34;
+        return self.runInParallel
+
 
     
-    def getLogger(self) -&gt; Logger:
-        &#34;&#34;&#34;
-        Get the active logger for the runner.
-        Returns:
-            Logger: The logger for the runner.
-        &#34;&#34;&#34;
-        return self.logger
-
-    
-    async def cacheSet(self, key:str, value, version:int=0, expireAt:int=0, local=True, CHUNK_SIZE=1024*1024*15):
-        &#34;&#34;&#34;
-        Set a value in the cache.
-        Args:
-            key (str): The key of the value to set.
-            value (object): The value to set.
-            version (int): The version of the cache (if the call to cacheGet requires a different version, the cache will be considered expired). Defaults to 0.            expireAt (int): The timestamp at which the value expires. Defaults to 0.
-            expireAt (int): The timestamp at which the value expires in milliseconds. 0 = never. Defaults to 0.
-            local (bool): Whether to store the value locally or remotely. Defaults to True.
-            CHUNK_SIZE (int): The size of each chunk to write in bytes, if needed. Defaults to 1024*1024*15.
-        &#34;&#34;&#34;
-        try:
-            dataBytes = pickle.dumps(value)
-            if local:
-                fullPath = os.path.join(self._cachePath, key)
-                with open(fullPath, &#34;wb&#34;) as f:
-                    f.write(dataBytes)
-                with open(fullPath+&#34;.meta.json&#34;, &#34;w&#34;) as f:
-                    f.write(json.dumps({&#34;version&#34;:version, &#34;expireAt&#34;:expireAt}))
-            else:
-                client = self._node._getClient()
-                def write_data():
-                    for j in range(0, len(dataBytes), CHUNK_SIZE):
-                        chunk = bytes(dataBytes[j:min(j+CHUNK_SIZE, len(dataBytes))])                   
-                        request = rpc_pb2.RpcCacheSetRequest(
-                            key=key, 
-                            data=chunk,
-                            expireAt=expireAt,
-                            version=version
-                        )
-                        yield request                              
-                res=await client.cacheSet(write_data())
-                return res.success
-        except Exception as e:
-            self.getLogger().error(&#34;Error setting cache &#34;+str(e))
-            return False
-        
-
-    async def cacheGet(self, key:str, lastVersion = 0, local=True) -&gt; any:
-        &#34;&#34;&#34;
-        Get a value from the cache.
-        Args:
-            path (str): The key of the value to get.
-            lastVersion (int): The version of the cache to check. Defaults to 0.
-            local (bool): Whether to get the value locally or remotely. Defaults to True.
-        Returns:
-            any: The value of the cache.
-        &#34;&#34;&#34;
-        try:
-            if local:
-                fullPath = os.path.join(self._cachePath, key)
-                if not os.path.exists(fullPath) or not os.path.exists(fullPath+&#34;.meta.json&#34;):
-                    return None
-                with open(fullPath+&#34;.meta.json&#34;, &#34;r&#34;) as f:
-                    meta = json.loads(f.read())
-                if lastVersion &gt; 0 and meta[&#34;version&#34;] != lastVersion:
-                    return None
-                if meta[&#34;expireAt&#34;] &gt; 0 and time.time()*1000 &gt; meta[&#34;expireAt&#34;]:
-                    return None
-                with open(fullPath, &#34;rb&#34;) as f:
-                    return pickle.load(f)
-            else:
-                client = self._node._getClient()
-                bytesOut = bytearray()
-                stream = client.cacheGet(rpc_pb2.RpcCacheGetRequest(key=key, lastVersion = lastVersion))
-                async for chunk in stream:
-                    if not chunk.exists:
-                        return None
-                    bytesOut.extend(chunk.data)
-                return pickle.loads(bytesOut)
-        except Exception as e:
-            self.getLogger().error(&#34;Error getting cache &#34;+str(e))
-            return None
-
-    def _setNode(self, node):
-        self._node = node
-
-    def _setJob(self, job):
-        self._job = job
-
-    def _log(self, message:str):
-        &#34;&#34;&#34;
-        Log a message to the network.
-        Shouldn&#39;t be used directly. Use getLogger().info() instead.
-        Args:
-            message (str): The message to log.
-        &#34;&#34;&#34;
-        if self._job: message+=&#34; for job &#34;+self._job.id
-        if self._node: 
-            self._node._log(message, self._job.id if self._job else None)
-        
-
-    async def openStorage(self, url:str)-&gt;Disk:
-        &#34;&#34;&#34;
-        Open a storage disk.
-        Args:
-            url (str): The URL of the disk.
-        Returns:
-            Disk: The disk object.
-        &#34;&#34;&#34;
-
-        if url in self._disksByUrl:
-            return self._disksByUrl[url]
-        client = self._node._getClient()
-        diskId =(await client.openDisk(rpc_pb2.RpcOpenDiskRequest(url=url))).diskId
-        disk =  Disk(id=diskId, url=url, node=self._node)
-        self._disksByUrl[url] = disk
-        self._disksById[diskId] = disk
-        return disk
-
-    async def createStorage(self,name:str=None,encryptionKey:str=None,includeEncryptionKeyInUrl:str=None) -&gt; Disk:
-        &#34;&#34;&#34;
-        Create a storage disk.
-        Args:
-            name (str): Optional: The name of the disk.
-            encryptionKey (str): Optional: The encryption key of the disk.
-            includeEncryptionKeyInUrl (str): Optional: Whether to include the encryption key in the URL.
-        Returns:
-            Disk: The disk object.
-        &#34;&#34;&#34;
-        if name in self._diskByName:
-            return self._diskByName[name]
-        
-        client = self._node._getClient()
-        url = (await client.createDisk(rpc_pb2.RpcCreateDiskRequest(
-            name=name,
-            encryptionKey=encryptionKey,
-            includeEncryptionKeyInUrl=includeEncryptionKeyInUrl
-        ))).url
-        diskId =( await client.openDisk(rpc_pb2.RpcOpenDiskRequest(url=url))).diskId
-        disk = Disk(id=diskId, url=url, node=self._node)
-        self._disksByUrl[url] = disk
-        self._disksById[diskId] = disk
-        self._diskByName[name] = disk
-        return disk
-
-    async def postRun(self, job:rpc_pb2.Job__pb2.Job) -&gt; None:
+    async def postRun(self, ctx:JobContext) -&gt; None:
         &#34;&#34;&#34;
         Called after the runner has finished running.
+        Args:
+            ctx (JobContext): The context of the job.
         &#34;&#34;&#34;
-        for disk in self._disksById.values():
-            await disk.close()
-        for disk in self._disksByUrl.values():
-            await disk.close()
-        for disk in self._diskByName.values():
-            await disk.close()
-        self._disksById = {}
-        self._disksByUrl = {}
-        self._diskByName = {}
+        pass
 
-    async def canRun(self,job:rpc_pb2.Job__pb2.Job) -&gt; bool:
+    async def canRun(self,ctx:JobContext) -&gt; bool:
         &#34;&#34;&#34;
         Check if the runner can run a job.
         Args:
-            job (Job): The job to check.
+            ctx (JobContext): The context of the job.
         Returns:
             bool: True if the runner can run the job, False otherwise.
         &#34;&#34;&#34;
         return True
         
-    async def preRun(self, job:rpc_pb2.Job__pb2.Job)-&gt; None:
+    async def preRun(self, ctx:JobContext)-&gt; None:
         &#34;&#34;&#34;
         Called before the runner starts running.
+        Args:
+            ctx (JobContext): The context of the job.
         &#34;&#34;&#34;
         pass
 
-    async def loop(self)-&gt; None:
-        &#34;&#34;&#34;
-        The main loop of the runner.
-        &#34;&#34;&#34;
-        pass
-
-    async def run(self, job:rpc_pb2.Job__pb2.Job) -&gt; None:
+    async def run(self, ctx:JobContext) -&gt; None:
         &#34;&#34;&#34;
         Run a job.
+        Args:
+            ctx (JobContext): The context of the job.
+        &#34;&#34;&#34;
+        pass
+
+    async def loop(self, node: &#39;OpenAgentsNode&#39;)-&gt; None:
+        &#34;&#34;&#34;
+        The main loop of the runner.
+        Args:
+            node (OpenAgentsNode): The node
+        &#34;&#34;&#34;
+        pass
+
+
+    async def init(self,node: &#39;OpenAgentsNode&#39;)-&gt; None:
+        &#34;&#34;&#34;
+        Initialize the runner.
+        Args:
+            node (OpenAgentsNode): The node
         &#34;&#34;&#34;
         pass</code></pre>
 </details>
 <h3>Methods</h3>
 <dl>
-<dt id="openagents.JobRunner.JobRunner.cacheGet"><code class="name flex">
-<span>async def <span class="ident">cacheGet</span></span>(<span>self, key: str, lastVersion=0, local=True) ‑> <built-in function any></span>
-</code></dt>
-<dd>
-<div class="desc"><p>Get a value from the cache.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>path</code></strong> :&ensp;<code>str</code></dt>
-<dd>The key of the value to get.</dd>
-<dt><strong><code>lastVersion</code></strong> :&ensp;<code>int</code></dt>
-<dd>The version of the cache to check. Defaults to 0.</dd>
-<dt><strong><code>local</code></strong> :&ensp;<code>bool</code></dt>
-<dd>Whether to get the value locally or remotely. Defaults to True.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>any</code></dt>
-<dd>The value of the cache.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">async def cacheGet(self, key:str, lastVersion = 0, local=True) -&gt; any:
-    &#34;&#34;&#34;
-    Get a value from the cache.
-    Args:
-        path (str): The key of the value to get.
-        lastVersion (int): The version of the cache to check. Defaults to 0.
-        local (bool): Whether to get the value locally or remotely. Defaults to True.
-    Returns:
-        any: The value of the cache.
-    &#34;&#34;&#34;
-    try:
-        if local:
-            fullPath = os.path.join(self._cachePath, key)
-            if not os.path.exists(fullPath) or not os.path.exists(fullPath+&#34;.meta.json&#34;):
-                return None
-            with open(fullPath+&#34;.meta.json&#34;, &#34;r&#34;) as f:
-                meta = json.loads(f.read())
-            if lastVersion &gt; 0 and meta[&#34;version&#34;] != lastVersion:
-                return None
-            if meta[&#34;expireAt&#34;] &gt; 0 and time.time()*1000 &gt; meta[&#34;expireAt&#34;]:
-                return None
-            with open(fullPath, &#34;rb&#34;) as f:
-                return pickle.load(f)
-        else:
-            client = self._node._getClient()
-            bytesOut = bytearray()
-            stream = client.cacheGet(rpc_pb2.RpcCacheGetRequest(key=key, lastVersion = lastVersion))
-            async for chunk in stream:
-                if not chunk.exists:
-                    return None
-                bytesOut.extend(chunk.data)
-            return pickle.loads(bytesOut)
-    except Exception as e:
-        self.getLogger().error(&#34;Error getting cache &#34;+str(e))
-        return None</code></pre>
-</details>
-</dd>
-<dt id="openagents.JobRunner.JobRunner.cacheSet"><code class="name flex">
-<span>async def <span class="ident">cacheSet</span></span>(<span>self, key: str, value, version: int = 0, expireAt: int = 0, local=True, CHUNK_SIZE=15728640)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Set a value in the cache.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>key</code></strong> :&ensp;<code>str</code></dt>
-<dd>The key of the value to set.</dd>
-<dt><strong><code>value</code></strong> :&ensp;<code>object</code></dt>
-<dd>The value to set.</dd>
-<dt><strong><code>version</code></strong> :&ensp;<code>int</code></dt>
-<dd>The version of the cache (if the call to cacheGet requires a different version, the cache will be considered expired). Defaults to 0.
-expireAt (int): The timestamp at which the value expires. Defaults to 0.</dd>
-<dt><strong><code>expireAt</code></strong> :&ensp;<code>int</code></dt>
-<dd>The timestamp at which the value expires in milliseconds. 0 = never. Defaults to 0.</dd>
-<dt><strong><code>local</code></strong> :&ensp;<code>bool</code></dt>
-<dd>Whether to store the value locally or remotely. Defaults to True.</dd>
-<dt><strong><code>CHUNK_SIZE</code></strong> :&ensp;<code>int</code></dt>
-<dd>The size of each chunk to write in bytes, if needed. Defaults to 1024<em>1024</em>15.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">async def cacheSet(self, key:str, value, version:int=0, expireAt:int=0, local=True, CHUNK_SIZE=1024*1024*15):
-    &#34;&#34;&#34;
-    Set a value in the cache.
-    Args:
-        key (str): The key of the value to set.
-        value (object): The value to set.
-        version (int): The version of the cache (if the call to cacheGet requires a different version, the cache will be considered expired). Defaults to 0.            expireAt (int): The timestamp at which the value expires. Defaults to 0.
-        expireAt (int): The timestamp at which the value expires in milliseconds. 0 = never. Defaults to 0.
-        local (bool): Whether to store the value locally or remotely. Defaults to True.
-        CHUNK_SIZE (int): The size of each chunk to write in bytes, if needed. Defaults to 1024*1024*15.
-    &#34;&#34;&#34;
-    try:
-        dataBytes = pickle.dumps(value)
-        if local:
-            fullPath = os.path.join(self._cachePath, key)
-            with open(fullPath, &#34;wb&#34;) as f:
-                f.write(dataBytes)
-            with open(fullPath+&#34;.meta.json&#34;, &#34;w&#34;) as f:
-                f.write(json.dumps({&#34;version&#34;:version, &#34;expireAt&#34;:expireAt}))
-        else:
-            client = self._node._getClient()
-            def write_data():
-                for j in range(0, len(dataBytes), CHUNK_SIZE):
-                    chunk = bytes(dataBytes[j:min(j+CHUNK_SIZE, len(dataBytes))])                   
-                    request = rpc_pb2.RpcCacheSetRequest(
-                        key=key, 
-                        data=chunk,
-                        expireAt=expireAt,
-                        version=version
-                    )
-                    yield request                              
-            res=await client.cacheSet(write_data())
-            return res.success
-    except Exception as e:
-        self.getLogger().error(&#34;Error setting cache &#34;+str(e))
-        return False</code></pre>
-</details>
-</dd>
 <dt id="openagents.JobRunner.JobRunner.canRun"><code class="name flex">
-<span>async def <span class="ident">canRun</span></span>(<span>self, job: Job_pb2.Job) ‑> bool</span>
+<span>async def <span class="ident">canRun</span></span>(<span>self, ctx: <a title="openagents.JobContext.JobContext" href="JobContext.html#openagents.JobContext.JobContext">JobContext</a>) ‑> bool</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Check if the runner can run a job.</p>
 <h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>job</code></strong> :&ensp;<code>Job</code></dt>
-<dd>The job to check.</dd>
+<dt><strong><code>ctx</code></strong> :&ensp;<code>JobContext</code></dt>
+<dd>The context of the job.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -663,198 +291,228 @@ expireAt (int): The timestamp at which the value expires. Defaults to 0.</dd>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def canRun(self,job:rpc_pb2.Job__pb2.Job) -&gt; bool:
+<pre><code class="python">async def canRun(self,ctx:JobContext) -&gt; bool:
     &#34;&#34;&#34;
     Check if the runner can run a job.
     Args:
-        job (Job): The job to check.
+        ctx (JobContext): The context of the job.
     Returns:
         bool: True if the runner can run the job, False otherwise.
     &#34;&#34;&#34;
     return True</code></pre>
 </details>
 </dd>
-<dt id="openagents.JobRunner.JobRunner.createStorage"><code class="name flex">
-<span>async def <span class="ident">createStorage</span></span>(<span>self, name: str = None, encryptionKey: str = None, includeEncryptionKeyInUrl: str = None) ‑> <a title="openagents.Disk.Disk" href="Disk.html#openagents.Disk.Disk">Disk</a></span>
+<dt id="openagents.JobRunner.JobRunner.getFilter"><code class="name flex">
+<span>def <span class="ident">getFilter</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Create a storage disk.</p>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def getFilter(self):
+    return self._filter</code></pre>
+</details>
+</dd>
+<dt id="openagents.JobRunner.JobRunner.getMeta"><code class="name flex">
+<span>def <span class="ident">getMeta</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def getMeta(self):
+    return self._meta</code></pre>
+</details>
+</dd>
+<dt id="openagents.JobRunner.JobRunner.getSockets"><code class="name flex">
+<span>def <span class="ident">getSockets</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def getSockets(self):
+    return self._sockets</code></pre>
+</details>
+</dd>
+<dt id="openagents.JobRunner.JobRunner.getTemplate"><code class="name flex">
+<span>def <span class="ident">getTemplate</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def getTemplate(self):
+    return self._template</code></pre>
+</details>
+</dd>
+<dt id="openagents.JobRunner.JobRunner.init"><code class="name flex">
+<span>async def <span class="ident">init</span></span>(<span>self, node: OpenAgentsNode)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Initialize the runner.</p>
 <h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
-<dd>Optional: The name of the disk.</dd>
-<dt><strong><code>encryptionKey</code></strong> :&ensp;<code>str</code></dt>
-<dd>Optional: The encryption key of the disk.</dd>
-<dt><strong><code>includeEncryptionKeyInUrl</code></strong> :&ensp;<code>str</code></dt>
-<dd>Optional: Whether to include the encryption key in the URL.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>Disk</code></dt>
-<dd>The disk object.</dd>
+<dt><strong><code>node</code></strong> :&ensp;<code>OpenAgentsNode</code></dt>
+<dd>The node</dd>
 </dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def createStorage(self,name:str=None,encryptionKey:str=None,includeEncryptionKeyInUrl:str=None) -&gt; Disk:
+<pre><code class="python">async def init(self,node: &#39;OpenAgentsNode&#39;)-&gt; None:
     &#34;&#34;&#34;
-    Create a storage disk.
+    Initialize the runner.
     Args:
-        name (str): Optional: The name of the disk.
-        encryptionKey (str): Optional: The encryption key of the disk.
-        includeEncryptionKeyInUrl (str): Optional: Whether to include the encryption key in the URL.
-    Returns:
-        Disk: The disk object.
-    &#34;&#34;&#34;
-    if name in self._diskByName:
-        return self._diskByName[name]
-    
-    client = self._node._getClient()
-    url = (await client.createDisk(rpc_pb2.RpcCreateDiskRequest(
-        name=name,
-        encryptionKey=encryptionKey,
-        includeEncryptionKeyInUrl=includeEncryptionKeyInUrl
-    ))).url
-    diskId =( await client.openDisk(rpc_pb2.RpcOpenDiskRequest(url=url))).diskId
-    disk = Disk(id=diskId, url=url, node=self._node)
-    self._disksByUrl[url] = disk
-    self._disksById[diskId] = disk
-    self._diskByName[name] = disk
-    return disk</code></pre>
-</details>
-</dd>
-<dt id="openagents.JobRunner.JobRunner.getLogger"><code class="name flex">
-<span>def <span class="ident">getLogger</span></span>(<span>self) ‑> <a title="openagents.Logger.Logger" href="Logger.html#openagents.Logger.Logger">Logger</a></span>
-</code></dt>
-<dd>
-<div class="desc"><p>Get the active logger for the runner.</p>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>Logger</code></dt>
-<dd>The logger for the runner.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def getLogger(self) -&gt; Logger:
-    &#34;&#34;&#34;
-    Get the active logger for the runner.
-    Returns:
-        Logger: The logger for the runner.
-    &#34;&#34;&#34;
-    return self.logger</code></pre>
-</details>
-</dd>
-<dt id="openagents.JobRunner.JobRunner.loop"><code class="name flex">
-<span>async def <span class="ident">loop</span></span>(<span>self) ‑> None</span>
-</code></dt>
-<dd>
-<div class="desc"><p>The main loop of the runner.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">async def loop(self)-&gt; None:
-    &#34;&#34;&#34;
-    The main loop of the runner.
+        node (OpenAgentsNode): The node
     &#34;&#34;&#34;
     pass</code></pre>
 </details>
 </dd>
-<dt id="openagents.JobRunner.JobRunner.openStorage"><code class="name flex">
-<span>async def <span class="ident">openStorage</span></span>(<span>self, url: str) ‑> <a title="openagents.Disk.Disk" href="Disk.html#openagents.Disk.Disk">Disk</a></span>
+<dt id="openagents.JobRunner.JobRunner.isRunInParallel"><code class="name flex">
+<span>def <span class="ident">isRunInParallel</span></span>(<span>self) ‑> bool</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Open a storage disk.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>url</code></strong> :&ensp;<code>str</code></dt>
-<dd>The URL of the disk.</dd>
-</dl>
+<div class="desc"><p>Check if the runner should run in parallel.</p>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>Disk</code></dt>
-<dd>The disk object.</dd>
+<dt><code>bool</code></dt>
+<dd>True if the runner should run in parallel, False otherwise.</dd>
 </dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def openStorage(self, url:str)-&gt;Disk:
+<pre><code class="python">def isRunInParallel(self) -&gt; bool:
     &#34;&#34;&#34;
-    Open a storage disk.
-    Args:
-        url (str): The URL of the disk.
+    Check if the runner should run in parallel.
     Returns:
-        Disk: The disk object.
+        bool: True if the runner should run in parallel, False otherwise.
     &#34;&#34;&#34;
-
-    if url in self._disksByUrl:
-        return self._disksByUrl[url]
-    client = self._node._getClient()
-    diskId =(await client.openDisk(rpc_pb2.RpcOpenDiskRequest(url=url))).diskId
-    disk =  Disk(id=diskId, url=url, node=self._node)
-    self._disksByUrl[url] = disk
-    self._disksById[diskId] = disk
-    return disk</code></pre>
+    return self.runInParallel</code></pre>
+</details>
+</dd>
+<dt id="openagents.JobRunner.JobRunner.loop"><code class="name flex">
+<span>async def <span class="ident">loop</span></span>(<span>self, node: OpenAgentsNode)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>The main loop of the runner.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>node</code></strong> :&ensp;<code>OpenAgentsNode</code></dt>
+<dd>The node</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def loop(self, node: &#39;OpenAgentsNode&#39;)-&gt; None:
+    &#34;&#34;&#34;
+    The main loop of the runner.
+    Args:
+        node (OpenAgentsNode): The node
+    &#34;&#34;&#34;
+    pass</code></pre>
 </details>
 </dd>
 <dt id="openagents.JobRunner.JobRunner.postRun"><code class="name flex">
-<span>async def <span class="ident">postRun</span></span>(<span>self, job: Job_pb2.Job) ‑> None</span>
+<span>async def <span class="ident">postRun</span></span>(<span>self, ctx: <a title="openagents.JobContext.JobContext" href="JobContext.html#openagents.JobContext.JobContext">JobContext</a>) ‑> None</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Called after the runner has finished running.</p></div>
+<div class="desc"><p>Called after the runner has finished running.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>ctx</code></strong> :&ensp;<code>JobContext</code></dt>
+<dd>The context of the job.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def postRun(self, job:rpc_pb2.Job__pb2.Job) -&gt; None:
+<pre><code class="python">async def postRun(self, ctx:JobContext) -&gt; None:
     &#34;&#34;&#34;
     Called after the runner has finished running.
+    Args:
+        ctx (JobContext): The context of the job.
     &#34;&#34;&#34;
-    for disk in self._disksById.values():
-        await disk.close()
-    for disk in self._disksByUrl.values():
-        await disk.close()
-    for disk in self._diskByName.values():
-        await disk.close()
-    self._disksById = {}
-    self._disksByUrl = {}
-    self._diskByName = {}</code></pre>
+    pass</code></pre>
 </details>
 </dd>
 <dt id="openagents.JobRunner.JobRunner.preRun"><code class="name flex">
-<span>async def <span class="ident">preRun</span></span>(<span>self, job: Job_pb2.Job) ‑> None</span>
+<span>async def <span class="ident">preRun</span></span>(<span>self, ctx: <a title="openagents.JobContext.JobContext" href="JobContext.html#openagents.JobContext.JobContext">JobContext</a>) ‑> None</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Called before the runner starts running.</p></div>
+<div class="desc"><p>Called before the runner starts running.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>ctx</code></strong> :&ensp;<code>JobContext</code></dt>
+<dd>The context of the job.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def preRun(self, job:rpc_pb2.Job__pb2.Job)-&gt; None:
+<pre><code class="python">async def preRun(self, ctx:JobContext)-&gt; None:
     &#34;&#34;&#34;
     Called before the runner starts running.
+    Args:
+        ctx (JobContext): The context of the job.
     &#34;&#34;&#34;
     pass</code></pre>
 </details>
 </dd>
 <dt id="openagents.JobRunner.JobRunner.run"><code class="name flex">
-<span>async def <span class="ident">run</span></span>(<span>self, job: Job_pb2.Job) ‑> None</span>
+<span>async def <span class="ident">run</span></span>(<span>self, ctx: <a title="openagents.JobContext.JobContext" href="JobContext.html#openagents.JobContext.JobContext">JobContext</a>) ‑> None</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Run a job.</p></div>
+<div class="desc"><p>Run a job.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>ctx</code></strong> :&ensp;<code>JobContext</code></dt>
+<dd>The context of the job.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def run(self, job:rpc_pb2.Job__pb2.Job) -&gt; None:
+<pre><code class="python">async def run(self, ctx:JobContext) -&gt; None:
     &#34;&#34;&#34;
     Run a job.
+    Args:
+        ctx (JobContext): The context of the job.
     &#34;&#34;&#34;
     pass</code></pre>
+</details>
+</dd>
+<dt id="openagents.JobRunner.JobRunner.setRunInParallel"><code class="name flex">
+<span>def <span class="ident">setRunInParallel</span></span>(<span>self, runInParallel: bool)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Set whether the runner should run in parallel.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>runInParallel</code></strong> :&ensp;<code>bool</code></dt>
+<dd>True if the runner should run in parallel, False otherwise. Defaults to False.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def setRunInParallel(self, runInParallel:bool):
+    &#34;&#34;&#34;
+    Set whether the runner should run in parallel.
+    Args:
+        runInParallel (bool): True if the runner should run in parallel, False otherwise. Defaults to False.
+    &#34;&#34;&#34;
+    self.runInParallel = runInParallel</code></pre>
 </details>
 </dd>
 </dl>
@@ -878,16 +536,18 @@ expireAt (int): The timestamp at which the value expires. Defaults to 0.</dd>
 <li>
 <h4><code><a title="openagents.JobRunner.JobRunner" href="#openagents.JobRunner.JobRunner">JobRunner</a></code></h4>
 <ul class="two-column">
-<li><code><a title="openagents.JobRunner.JobRunner.cacheGet" href="#openagents.JobRunner.JobRunner.cacheGet">cacheGet</a></code></li>
-<li><code><a title="openagents.JobRunner.JobRunner.cacheSet" href="#openagents.JobRunner.JobRunner.cacheSet">cacheSet</a></code></li>
 <li><code><a title="openagents.JobRunner.JobRunner.canRun" href="#openagents.JobRunner.JobRunner.canRun">canRun</a></code></li>
-<li><code><a title="openagents.JobRunner.JobRunner.createStorage" href="#openagents.JobRunner.JobRunner.createStorage">createStorage</a></code></li>
-<li><code><a title="openagents.JobRunner.JobRunner.getLogger" href="#openagents.JobRunner.JobRunner.getLogger">getLogger</a></code></li>
+<li><code><a title="openagents.JobRunner.JobRunner.getFilter" href="#openagents.JobRunner.JobRunner.getFilter">getFilter</a></code></li>
+<li><code><a title="openagents.JobRunner.JobRunner.getMeta" href="#openagents.JobRunner.JobRunner.getMeta">getMeta</a></code></li>
+<li><code><a title="openagents.JobRunner.JobRunner.getSockets" href="#openagents.JobRunner.JobRunner.getSockets">getSockets</a></code></li>
+<li><code><a title="openagents.JobRunner.JobRunner.getTemplate" href="#openagents.JobRunner.JobRunner.getTemplate">getTemplate</a></code></li>
+<li><code><a title="openagents.JobRunner.JobRunner.init" href="#openagents.JobRunner.JobRunner.init">init</a></code></li>
+<li><code><a title="openagents.JobRunner.JobRunner.isRunInParallel" href="#openagents.JobRunner.JobRunner.isRunInParallel">isRunInParallel</a></code></li>
 <li><code><a title="openagents.JobRunner.JobRunner.loop" href="#openagents.JobRunner.JobRunner.loop">loop</a></code></li>
-<li><code><a title="openagents.JobRunner.JobRunner.openStorage" href="#openagents.JobRunner.JobRunner.openStorage">openStorage</a></code></li>
 <li><code><a title="openagents.JobRunner.JobRunner.postRun" href="#openagents.JobRunner.JobRunner.postRun">postRun</a></code></li>
 <li><code><a title="openagents.JobRunner.JobRunner.preRun" href="#openagents.JobRunner.JobRunner.preRun">preRun</a></code></li>
 <li><code><a title="openagents.JobRunner.JobRunner.run" href="#openagents.JobRunner.JobRunner.run">run</a></code></li>
+<li><code><a title="openagents.JobRunner.JobRunner.setRunInParallel" href="#openagents.JobRunner.JobRunner.setRunInParallel">setRunInParallel</a></code></li>
 </ul>
 </li>
 </ul>

@@ -40,8 +40,8 @@ class NodeConfig :
         self._meta={
             &#34;name&#34;: &#34;OpenAgents Node&#34;,
             &#34;description&#34;: &#34;An new OpenAgents Node&#34;,
-            &#34;about&#34;: &#34;An new OpenAgents Node&#34;,
             &#34;version&#34;: &#34;0.0.1&#34;,
+            &#34;picture&#34;:&#34;&#34;
         }
         if meta:
             for k,v in meta.items():
@@ -50,46 +50,8 @@ class NodeConfig :
     def getMeta(self):
         self._meta[&#34;name&#34;] = os.getenv(&#39;NODE_NAME&#39;, self._meta[&#34;name&#34;])
         self._meta[&#34;description&#34;] = os.getenv(&#39;NODE_DESCRIPTION&#39;, self._meta[&#34;description&#34;])
-        self._meta[&#34;about&#34;] = os.getenv(&#39;NODE_DESCRIPTION&#39;, self._meta[&#34;about&#34;])
-        self._meta[&#34;description&#34;] = os.getenv(&#39;NODE_DESCRIPTION&#39;, self._meta[&#34;description&#34;])
         self._meta[&#34;version&#34;] = os.getenv(&#39;NODE_VERSION&#39;, self._meta[&#34;version&#34;])
-
-        return self._meta
-
-    def name(self,name:str)-&gt;&#39;NodeConfig&#39;:
-        &#34;&#34;&#34;
-        Set the name of the node.
-        Args:
-            name (str): The name of the node.
-        Returns:
-            NodeConfig: The node configuration.
-        &#34;&#34;&#34;
-        self._meta[&#34;name&#34;]=name
-        return self
-
-    def description(self,description:str)-&gt;&#39;NodeConfig&#39;:
-        &#34;&#34;&#34;
-        Set the description of the node.
-        Args:
-            description (str): The description of the node.
-        Returns:
-            NodeConfig: The node configuration.
-        &#34;&#34;&#34;
-        self._meta[&#34;about&#34;]=description
-        self._meta[&#34;description&#34;]=description
-        return self
-
-    def version(self,version:str)-&gt;&#39;NodeConfig&#39;:
-        &#34;&#34;&#34;
-        Set the version of the node.
-        Args:
-            version (str): The version of the node.
-        Returns:
-            NodeConfig: The node configuration.
-        &#34;&#34;&#34;
-        self._meta[&#34;version&#34;]=version
-        return self
-    </code></pre>
+        return self._meta</code></pre>
 </details>
 </section>
 <section>
@@ -127,8 +89,8 @@ Can be configured also with environment variables:
         self._meta={
             &#34;name&#34;: &#34;OpenAgents Node&#34;,
             &#34;description&#34;: &#34;An new OpenAgents Node&#34;,
-            &#34;about&#34;: &#34;An new OpenAgents Node&#34;,
             &#34;version&#34;: &#34;0.0.1&#34;,
+            &#34;picture&#34;:&#34;&#34;
         }
         if meta:
             for k,v in meta.items():
@@ -137,80 +99,11 @@ Can be configured also with environment variables:
     def getMeta(self):
         self._meta[&#34;name&#34;] = os.getenv(&#39;NODE_NAME&#39;, self._meta[&#34;name&#34;])
         self._meta[&#34;description&#34;] = os.getenv(&#39;NODE_DESCRIPTION&#39;, self._meta[&#34;description&#34;])
-        self._meta[&#34;about&#34;] = os.getenv(&#39;NODE_DESCRIPTION&#39;, self._meta[&#34;about&#34;])
-        self._meta[&#34;description&#34;] = os.getenv(&#39;NODE_DESCRIPTION&#39;, self._meta[&#34;description&#34;])
         self._meta[&#34;version&#34;] = os.getenv(&#39;NODE_VERSION&#39;, self._meta[&#34;version&#34;])
-
-        return self._meta
-
-    def name(self,name:str)-&gt;&#39;NodeConfig&#39;:
-        &#34;&#34;&#34;
-        Set the name of the node.
-        Args:
-            name (str): The name of the node.
-        Returns:
-            NodeConfig: The node configuration.
-        &#34;&#34;&#34;
-        self._meta[&#34;name&#34;]=name
-        return self
-
-    def description(self,description:str)-&gt;&#39;NodeConfig&#39;:
-        &#34;&#34;&#34;
-        Set the description of the node.
-        Args:
-            description (str): The description of the node.
-        Returns:
-            NodeConfig: The node configuration.
-        &#34;&#34;&#34;
-        self._meta[&#34;about&#34;]=description
-        self._meta[&#34;description&#34;]=description
-        return self
-
-    def version(self,version:str)-&gt;&#39;NodeConfig&#39;:
-        &#34;&#34;&#34;
-        Set the version of the node.
-        Args:
-            version (str): The version of the node.
-        Returns:
-            NodeConfig: The node configuration.
-        &#34;&#34;&#34;
-        self._meta[&#34;version&#34;]=version
-        return self</code></pre>
+        return self._meta</code></pre>
 </details>
 <h3>Methods</h3>
 <dl>
-<dt id="openagents.NodeConfig.NodeConfig.description"><code class="name flex">
-<span>def <span class="ident">description</span></span>(<span>self, description: str) ‑> <a title="openagents.NodeConfig.NodeConfig" href="#openagents.NodeConfig.NodeConfig">NodeConfig</a></span>
-</code></dt>
-<dd>
-<div class="desc"><p>Set the description of the node.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>description</code></strong> :&ensp;<code>str</code></dt>
-<dd>The description of the node.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code><a title="openagents.NodeConfig.NodeConfig" href="#openagents.NodeConfig.NodeConfig">NodeConfig</a></code></dt>
-<dd>The node configuration.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def description(self,description:str)-&gt;&#39;NodeConfig&#39;:
-    &#34;&#34;&#34;
-    Set the description of the node.
-    Args:
-        description (str): The description of the node.
-    Returns:
-        NodeConfig: The node configuration.
-    &#34;&#34;&#34;
-    self._meta[&#34;about&#34;]=description
-    self._meta[&#34;description&#34;]=description
-    return self</code></pre>
-</details>
-</dd>
 <dt id="openagents.NodeConfig.NodeConfig.getMeta"><code class="name flex">
 <span>def <span class="ident">getMeta</span></span>(<span>self)</span>
 </code></dt>
@@ -223,73 +116,8 @@ Can be configured also with environment variables:
 <pre><code class="python">def getMeta(self):
     self._meta[&#34;name&#34;] = os.getenv(&#39;NODE_NAME&#39;, self._meta[&#34;name&#34;])
     self._meta[&#34;description&#34;] = os.getenv(&#39;NODE_DESCRIPTION&#39;, self._meta[&#34;description&#34;])
-    self._meta[&#34;about&#34;] = os.getenv(&#39;NODE_DESCRIPTION&#39;, self._meta[&#34;about&#34;])
-    self._meta[&#34;description&#34;] = os.getenv(&#39;NODE_DESCRIPTION&#39;, self._meta[&#34;description&#34;])
     self._meta[&#34;version&#34;] = os.getenv(&#39;NODE_VERSION&#39;, self._meta[&#34;version&#34;])
-
     return self._meta</code></pre>
-</details>
-</dd>
-<dt id="openagents.NodeConfig.NodeConfig.name"><code class="name flex">
-<span>def <span class="ident">name</span></span>(<span>self, name: str) ‑> <a title="openagents.NodeConfig.NodeConfig" href="#openagents.NodeConfig.NodeConfig">NodeConfig</a></span>
-</code></dt>
-<dd>
-<div class="desc"><p>Set the name of the node.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
-<dd>The name of the node.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code><a title="openagents.NodeConfig.NodeConfig" href="#openagents.NodeConfig.NodeConfig">NodeConfig</a></code></dt>
-<dd>The node configuration.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def name(self,name:str)-&gt;&#39;NodeConfig&#39;:
-    &#34;&#34;&#34;
-    Set the name of the node.
-    Args:
-        name (str): The name of the node.
-    Returns:
-        NodeConfig: The node configuration.
-    &#34;&#34;&#34;
-    self._meta[&#34;name&#34;]=name
-    return self</code></pre>
-</details>
-</dd>
-<dt id="openagents.NodeConfig.NodeConfig.version"><code class="name flex">
-<span>def <span class="ident">version</span></span>(<span>self, version: str) ‑> <a title="openagents.NodeConfig.NodeConfig" href="#openagents.NodeConfig.NodeConfig">NodeConfig</a></span>
-</code></dt>
-<dd>
-<div class="desc"><p>Set the version of the node.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>version</code></strong> :&ensp;<code>str</code></dt>
-<dd>The version of the node.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code><a title="openagents.NodeConfig.NodeConfig" href="#openagents.NodeConfig.NodeConfig">NodeConfig</a></code></dt>
-<dd>The node configuration.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def version(self,version:str)-&gt;&#39;NodeConfig&#39;:
-    &#34;&#34;&#34;
-    Set the version of the node.
-    Args:
-        version (str): The version of the node.
-    Returns:
-        NodeConfig: The node configuration.
-    &#34;&#34;&#34;
-    self._meta[&#34;version&#34;]=version
-    return self</code></pre>
 </details>
 </dd>
 </dl>
@@ -313,10 +141,7 @@ Can be configured also with environment variables:
 <li>
 <h4><code><a title="openagents.NodeConfig.NodeConfig" href="#openagents.NodeConfig.NodeConfig">NodeConfig</a></code></h4>
 <ul class="">
-<li><code><a title="openagents.NodeConfig.NodeConfig.description" href="#openagents.NodeConfig.NodeConfig.description">description</a></code></li>
 <li><code><a title="openagents.NodeConfig.NodeConfig.getMeta" href="#openagents.NodeConfig.NodeConfig.getMeta">getMeta</a></code></li>
-<li><code><a title="openagents.NodeConfig.NodeConfig.name" href="#openagents.NodeConfig.NodeConfig.name">name</a></code></li>
-<li><code><a title="openagents.NodeConfig.NodeConfig.version" href="#openagents.NodeConfig.NodeConfig.version">version</a></code></li>
 </ul>
 </li>
 </ul>

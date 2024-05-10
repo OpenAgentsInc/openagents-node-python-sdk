@@ -1,0 +1,903 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>openagents.JobContext API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>openagents.JobContext</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">from openagents_grpc_proto import rpc_pb2_grpc
+from openagents_grpc_proto import rpc_pb2
+from .Logger import Logger
+from .Disk import Disk
+from .RunnerConfig import RunnerConfig
+import time
+import os
+import json
+import pickle
+from typing import Union
+
+class JobContext:
+    &#34;&#34;&#34;
+    A class that represents the context of a job.
+    &#34;&#34;&#34;
+    def __init__(self, node: &#39;OpenAgentsNode&#39;,runner:&#39;JobRunner&#39;, job: rpc_pb2.Job__pb2):
+        self.job=job
+        self._node=node
+        self.runner=runner
+        
+        self._cachePath = os.getenv(&#39;CACHE_PATH&#39;,  &#34;cache&#34;)
+        if not os.path.exists(self._cachePath):
+            os.makedirs(self._cachePath)
+
+        self.logger=Logger(
+            self._node.getMeta()[&#34;name&#34;]+&#34;.&#34;+self.runner.getMeta()[&#34;name&#34;],
+            self._node.getMeta()[&#34;version&#34;],
+            self.job.id,
+            lambda x: self._node._log(x, self.job.id),
+        )
+
+        self._disksByUrl = {}
+        self._disksById = {}
+        self._diskByName = {}
+
+    def getLogger(self):
+        &#34;&#34;&#34;
+        Get the logger of the job.
+        &#34;&#34;&#34;
+        return self.logger
+
+ 
+    def getNode(self):
+        &#34;&#34;&#34;
+        Get the node running this job
+        &#34;&#34;&#34;
+        return self._node
+
+    def getJob(self):
+        &#34;&#34;&#34;
+        Get the job object.
+        &#34;&#34;&#34;
+        return self.job
+
+    
+    async def cacheSet(self, key:str, value, version:int=0, expireAt:int=0, local=True, CHUNK_SIZE=1024*1024*15):
+        &#34;&#34;&#34;
+        Set a value in the cache.
+        Args:
+            key (str): The key of the value to set.
+            value (object): The value to set.
+            version (int): The version of the cache (if the call to cacheGet requires a different version, the cache will be considered expired). Defaults to 0.            expireAt (int): The timestamp at which the value expires. Defaults to 0.
+            expireAt (int): The timestamp at which the value expires in milliseconds. 0 = never. Defaults to 0.
+            local (bool): Whether to store the value locally or remotely. Defaults to True.
+            CHUNK_SIZE (int): The size of each chunk to write in bytes, if needed. Defaults to 1024*1024*15.
+        &#34;&#34;&#34;
+        try:
+            dataBytes = pickle.dumps(value)
+            if local:
+                fullPath = os.path.join(self._cachePath, key)
+                with open(fullPath, &#34;wb&#34;) as f:
+                    f.write(dataBytes)
+                with open(fullPath+&#34;.meta.json&#34;, &#34;w&#34;) as f:
+                    f.write(json.dumps({&#34;version&#34;:version, &#34;expireAt&#34;:expireAt}))
+            else:
+                client = self._node._getClient()
+                def write_data():
+                    for j in range(0, len(dataBytes), CHUNK_SIZE):
+                        chunk = bytes(dataBytes[j:min(j+CHUNK_SIZE, len(dataBytes))])                   
+                        request = rpc_pb2.RpcCacheSetRequest(
+                            key=key, 
+                            data=chunk,
+                            expireAt=expireAt,
+                            version=version
+                        )
+                        yield request                              
+                res=await client.cacheSet(write_data())
+                return res.success
+        except Exception as e:
+            self._node.getLogger().error(&#34;Error setting cache &#34;+str(e))
+            return False
+        
+
+    async def cacheGet(self, key:str, lastVersion = 0, local=True) -&gt; any:
+        &#34;&#34;&#34;
+        Get a value from the cache.
+        Args:
+            path (str): The key of the value to get.
+            lastVersion (int): The version of the cache to check. Defaults to 0.
+            local (bool): Whether to get the value locally or remotely. Defaults to True.
+        Returns:
+            any: The value of the cache.
+        &#34;&#34;&#34;
+        try:
+            if local:
+                fullPath = os.path.join(self._cachePath, key)
+                if not os.path.exists(fullPath) or not os.path.exists(fullPath+&#34;.meta.json&#34;):
+                    return None
+                with open(fullPath+&#34;.meta.json&#34;, &#34;r&#34;) as f:
+                    meta = json.loads(f.read())
+                if lastVersion &gt; 0 and meta[&#34;version&#34;] != lastVersion:
+                    return None
+                if meta[&#34;expireAt&#34;] &gt; 0 and time.time()*1000 &gt; meta[&#34;expireAt&#34;]:
+                    return None
+                with open(fullPath, &#34;rb&#34;) as f:
+                    return pickle.load(f)
+            else:
+                client = self._node._getClient()
+                bytesOut = bytearray()
+                stream = client.cacheGet(rpc_pb2.RpcCacheGetRequest(key=key, lastVersion = lastVersion))
+                async for chunk in stream:
+                    if not chunk.exists:
+                        return None
+                    bytesOut.extend(chunk.data)
+                return pickle.loads(bytesOut)
+        except Exception as e:
+            self._node.getLogger().error(&#34;Error getting cache &#34;+str(e))
+            return None
+
+
+    
+    async def openStorage(self, url:str)-&gt;Disk:
+        &#34;&#34;&#34;
+        Open a storage disk.
+        Args:
+            url (str): The URL of the disk.
+        Returns:
+            Disk: The disk object.
+        &#34;&#34;&#34;
+
+        if url in self._disksByUrl:
+            return self._disksByUrl[url]
+        client = self._node._getClient()
+        diskId =(await client.openDisk(rpc_pb2.RpcOpenDiskRequest(url=url))).diskId
+        disk =  Disk(id=diskId, url=url, node=self._node)
+        self._disksByUrl[url] = disk
+        self._disksById[diskId] = disk
+        return disk
+
+    async def createStorage(self,name:str=None,encryptionKey:str=None,includeEncryptionKeyInUrl:str=None) -&gt; Disk:
+        &#34;&#34;&#34;
+        Create a storage disk.
+        Args:
+            name (str): Optional: The name of the disk.
+            encryptionKey (str): Optional: The encryption key of the disk.
+            includeEncryptionKeyInUrl (str): Optional: Whether to include the encryption key in the URL.
+        Returns:
+            Disk: The disk object.
+        &#34;&#34;&#34;
+        if name in self._diskByName:
+            return self._diskByName[name]
+        
+        client = self._node._getClient()
+        url = (await client.createDisk(rpc_pb2.RpcCreateDiskRequest(
+            name=name,
+            encryptionKey=encryptionKey,
+            includeEncryptionKeyInUrl=includeEncryptionKeyInUrl
+        ))).url
+        diskId =( await client.openDisk(rpc_pb2.RpcOpenDiskRequest(url=url))).diskId
+        disk = Disk(id=diskId, url=url, node=self._node)
+        self._disksByUrl[url] = disk
+        self._disksById[diskId] = disk
+        if name:self._diskByName[name] = disk
+        return disk
+
+    async def close(self):
+        &#34;&#34;&#34;
+        Close the job context.
+        Free up resources, submit pending logs.
+        &#34;&#34;&#34;
+        for disk in self._disksById.values():
+            await disk.close()
+        for disk in self._disksByUrl.values():
+            await disk.close()
+        for disk in self._diskByName.values():
+            await disk.close()
+        self._disksById = {}
+        self._disksByUrl = {}
+        self._diskByName = {}
+        self.logger.close()
+
+
+    def getJobParamValues(self,key,default:list[str]=None)-&gt;list[str]:
+        job=self.getJob()
+        for p in job.param:
+            if p.key == key:
+                return p.value
+        return default
+
+    
+    def getJobParamValue(self,key,default:str=None)-&gt;str:
+        job=self.getJob()
+        for p in job.param:
+            if p.key == key:
+                return p.value[0]
+
+    def getJobInputs(self,marker:str|None=None)-&gt;list[rpc_pb2.JobInput__pb2]:
+        job=self.getJob()
+        out=[]
+        for i in job.input:
+            if marker is None or i.marker == marker:
+                out.append(i)
+        return out
+
+    def getJobInput(self,marker:str|None=None)-&gt;rpc_pb2.JobInput__pb2:
+        job=self.getJob()
+        for i in job.input:
+            if marker is None or i.marker == marker:
+                return i
+        return None
+
+    def getOutputFormat(self):
+        job=self.getJob()
+        return job.outputFormat</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="openagents.JobContext.JobContext"><code class="flex name class">
+<span>class <span class="ident">JobContext</span></span>
+<span>(</span><span>node: OpenAgentsNode, runner: JobRunner, job: <module 'Job_pb2' from '/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/openagents_grpc_proto/Job_pb2.py'>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A class that represents the context of a job.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class JobContext:
+    &#34;&#34;&#34;
+    A class that represents the context of a job.
+    &#34;&#34;&#34;
+    def __init__(self, node: &#39;OpenAgentsNode&#39;,runner:&#39;JobRunner&#39;, job: rpc_pb2.Job__pb2):
+        self.job=job
+        self._node=node
+        self.runner=runner
+        
+        self._cachePath = os.getenv(&#39;CACHE_PATH&#39;,  &#34;cache&#34;)
+        if not os.path.exists(self._cachePath):
+            os.makedirs(self._cachePath)
+
+        self.logger=Logger(
+            self._node.getMeta()[&#34;name&#34;]+&#34;.&#34;+self.runner.getMeta()[&#34;name&#34;],
+            self._node.getMeta()[&#34;version&#34;],
+            self.job.id,
+            lambda x: self._node._log(x, self.job.id),
+        )
+
+        self._disksByUrl = {}
+        self._disksById = {}
+        self._diskByName = {}
+
+    def getLogger(self):
+        &#34;&#34;&#34;
+        Get the logger of the job.
+        &#34;&#34;&#34;
+        return self.logger
+
+ 
+    def getNode(self):
+        &#34;&#34;&#34;
+        Get the node running this job
+        &#34;&#34;&#34;
+        return self._node
+
+    def getJob(self):
+        &#34;&#34;&#34;
+        Get the job object.
+        &#34;&#34;&#34;
+        return self.job
+
+    
+    async def cacheSet(self, key:str, value, version:int=0, expireAt:int=0, local=True, CHUNK_SIZE=1024*1024*15):
+        &#34;&#34;&#34;
+        Set a value in the cache.
+        Args:
+            key (str): The key of the value to set.
+            value (object): The value to set.
+            version (int): The version of the cache (if the call to cacheGet requires a different version, the cache will be considered expired). Defaults to 0.            expireAt (int): The timestamp at which the value expires. Defaults to 0.
+            expireAt (int): The timestamp at which the value expires in milliseconds. 0 = never. Defaults to 0.
+            local (bool): Whether to store the value locally or remotely. Defaults to True.
+            CHUNK_SIZE (int): The size of each chunk to write in bytes, if needed. Defaults to 1024*1024*15.
+        &#34;&#34;&#34;
+        try:
+            dataBytes = pickle.dumps(value)
+            if local:
+                fullPath = os.path.join(self._cachePath, key)
+                with open(fullPath, &#34;wb&#34;) as f:
+                    f.write(dataBytes)
+                with open(fullPath+&#34;.meta.json&#34;, &#34;w&#34;) as f:
+                    f.write(json.dumps({&#34;version&#34;:version, &#34;expireAt&#34;:expireAt}))
+            else:
+                client = self._node._getClient()
+                def write_data():
+                    for j in range(0, len(dataBytes), CHUNK_SIZE):
+                        chunk = bytes(dataBytes[j:min(j+CHUNK_SIZE, len(dataBytes))])                   
+                        request = rpc_pb2.RpcCacheSetRequest(
+                            key=key, 
+                            data=chunk,
+                            expireAt=expireAt,
+                            version=version
+                        )
+                        yield request                              
+                res=await client.cacheSet(write_data())
+                return res.success
+        except Exception as e:
+            self._node.getLogger().error(&#34;Error setting cache &#34;+str(e))
+            return False
+        
+
+    async def cacheGet(self, key:str, lastVersion = 0, local=True) -&gt; any:
+        &#34;&#34;&#34;
+        Get a value from the cache.
+        Args:
+            path (str): The key of the value to get.
+            lastVersion (int): The version of the cache to check. Defaults to 0.
+            local (bool): Whether to get the value locally or remotely. Defaults to True.
+        Returns:
+            any: The value of the cache.
+        &#34;&#34;&#34;
+        try:
+            if local:
+                fullPath = os.path.join(self._cachePath, key)
+                if not os.path.exists(fullPath) or not os.path.exists(fullPath+&#34;.meta.json&#34;):
+                    return None
+                with open(fullPath+&#34;.meta.json&#34;, &#34;r&#34;) as f:
+                    meta = json.loads(f.read())
+                if lastVersion &gt; 0 and meta[&#34;version&#34;] != lastVersion:
+                    return None
+                if meta[&#34;expireAt&#34;] &gt; 0 and time.time()*1000 &gt; meta[&#34;expireAt&#34;]:
+                    return None
+                with open(fullPath, &#34;rb&#34;) as f:
+                    return pickle.load(f)
+            else:
+                client = self._node._getClient()
+                bytesOut = bytearray()
+                stream = client.cacheGet(rpc_pb2.RpcCacheGetRequest(key=key, lastVersion = lastVersion))
+                async for chunk in stream:
+                    if not chunk.exists:
+                        return None
+                    bytesOut.extend(chunk.data)
+                return pickle.loads(bytesOut)
+        except Exception as e:
+            self._node.getLogger().error(&#34;Error getting cache &#34;+str(e))
+            return None
+
+
+    
+    async def openStorage(self, url:str)-&gt;Disk:
+        &#34;&#34;&#34;
+        Open a storage disk.
+        Args:
+            url (str): The URL of the disk.
+        Returns:
+            Disk: The disk object.
+        &#34;&#34;&#34;
+
+        if url in self._disksByUrl:
+            return self._disksByUrl[url]
+        client = self._node._getClient()
+        diskId =(await client.openDisk(rpc_pb2.RpcOpenDiskRequest(url=url))).diskId
+        disk =  Disk(id=diskId, url=url, node=self._node)
+        self._disksByUrl[url] = disk
+        self._disksById[diskId] = disk
+        return disk
+
+    async def createStorage(self,name:str=None,encryptionKey:str=None,includeEncryptionKeyInUrl:str=None) -&gt; Disk:
+        &#34;&#34;&#34;
+        Create a storage disk.
+        Args:
+            name (str): Optional: The name of the disk.
+            encryptionKey (str): Optional: The encryption key of the disk.
+            includeEncryptionKeyInUrl (str): Optional: Whether to include the encryption key in the URL.
+        Returns:
+            Disk: The disk object.
+        &#34;&#34;&#34;
+        if name in self._diskByName:
+            return self._diskByName[name]
+        
+        client = self._node._getClient()
+        url = (await client.createDisk(rpc_pb2.RpcCreateDiskRequest(
+            name=name,
+            encryptionKey=encryptionKey,
+            includeEncryptionKeyInUrl=includeEncryptionKeyInUrl
+        ))).url
+        diskId =( await client.openDisk(rpc_pb2.RpcOpenDiskRequest(url=url))).diskId
+        disk = Disk(id=diskId, url=url, node=self._node)
+        self._disksByUrl[url] = disk
+        self._disksById[diskId] = disk
+        if name:self._diskByName[name] = disk
+        return disk
+
+    async def close(self):
+        &#34;&#34;&#34;
+        Close the job context.
+        Free up resources, submit pending logs.
+        &#34;&#34;&#34;
+        for disk in self._disksById.values():
+            await disk.close()
+        for disk in self._disksByUrl.values():
+            await disk.close()
+        for disk in self._diskByName.values():
+            await disk.close()
+        self._disksById = {}
+        self._disksByUrl = {}
+        self._diskByName = {}
+        self.logger.close()
+
+
+    def getJobParamValues(self,key,default:list[str]=None)-&gt;list[str]:
+        job=self.getJob()
+        for p in job.param:
+            if p.key == key:
+                return p.value
+        return default
+
+    
+    def getJobParamValue(self,key,default:str=None)-&gt;str:
+        job=self.getJob()
+        for p in job.param:
+            if p.key == key:
+                return p.value[0]
+
+    def getJobInputs(self,marker:str|None=None)-&gt;list[rpc_pb2.JobInput__pb2]:
+        job=self.getJob()
+        out=[]
+        for i in job.input:
+            if marker is None or i.marker == marker:
+                out.append(i)
+        return out
+
+    def getJobInput(self,marker:str|None=None)-&gt;rpc_pb2.JobInput__pb2:
+        job=self.getJob()
+        for i in job.input:
+            if marker is None or i.marker == marker:
+                return i
+        return None
+
+    def getOutputFormat(self):
+        job=self.getJob()
+        return job.outputFormat</code></pre>
+</details>
+<h3>Methods</h3>
+<dl>
+<dt id="openagents.JobContext.JobContext.cacheGet"><code class="name flex">
+<span>async def <span class="ident">cacheGet</span></span>(<span>self, key: str, lastVersion=0, local=True) ‑> <built-in function any></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get a value from the cache.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>path</code></strong> :&ensp;<code>str</code></dt>
+<dd>The key of the value to get.</dd>
+<dt><strong><code>lastVersion</code></strong> :&ensp;<code>int</code></dt>
+<dd>The version of the cache to check. Defaults to 0.</dd>
+<dt><strong><code>local</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Whether to get the value locally or remotely. Defaults to True.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>any</code></dt>
+<dd>The value of the cache.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def cacheGet(self, key:str, lastVersion = 0, local=True) -&gt; any:
+    &#34;&#34;&#34;
+    Get a value from the cache.
+    Args:
+        path (str): The key of the value to get.
+        lastVersion (int): The version of the cache to check. Defaults to 0.
+        local (bool): Whether to get the value locally or remotely. Defaults to True.
+    Returns:
+        any: The value of the cache.
+    &#34;&#34;&#34;
+    try:
+        if local:
+            fullPath = os.path.join(self._cachePath, key)
+            if not os.path.exists(fullPath) or not os.path.exists(fullPath+&#34;.meta.json&#34;):
+                return None
+            with open(fullPath+&#34;.meta.json&#34;, &#34;r&#34;) as f:
+                meta = json.loads(f.read())
+            if lastVersion &gt; 0 and meta[&#34;version&#34;] != lastVersion:
+                return None
+            if meta[&#34;expireAt&#34;] &gt; 0 and time.time()*1000 &gt; meta[&#34;expireAt&#34;]:
+                return None
+            with open(fullPath, &#34;rb&#34;) as f:
+                return pickle.load(f)
+        else:
+            client = self._node._getClient()
+            bytesOut = bytearray()
+            stream = client.cacheGet(rpc_pb2.RpcCacheGetRequest(key=key, lastVersion = lastVersion))
+            async for chunk in stream:
+                if not chunk.exists:
+                    return None
+                bytesOut.extend(chunk.data)
+            return pickle.loads(bytesOut)
+    except Exception as e:
+        self._node.getLogger().error(&#34;Error getting cache &#34;+str(e))
+        return None</code></pre>
+</details>
+</dd>
+<dt id="openagents.JobContext.JobContext.cacheSet"><code class="name flex">
+<span>async def <span class="ident">cacheSet</span></span>(<span>self, key: str, value, version: int = 0, expireAt: int = 0, local=True, CHUNK_SIZE=15728640)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Set a value in the cache.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>key</code></strong> :&ensp;<code>str</code></dt>
+<dd>The key of the value to set.</dd>
+<dt><strong><code>value</code></strong> :&ensp;<code>object</code></dt>
+<dd>The value to set.</dd>
+<dt><strong><code>version</code></strong> :&ensp;<code>int</code></dt>
+<dd>The version of the cache (if the call to cacheGet requires a different version, the cache will be considered expired). Defaults to 0.
+expireAt (int): The timestamp at which the value expires. Defaults to 0.</dd>
+<dt><strong><code>expireAt</code></strong> :&ensp;<code>int</code></dt>
+<dd>The timestamp at which the value expires in milliseconds. 0 = never. Defaults to 0.</dd>
+<dt><strong><code>local</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Whether to store the value locally or remotely. Defaults to True.</dd>
+<dt><strong><code>CHUNK_SIZE</code></strong> :&ensp;<code>int</code></dt>
+<dd>The size of each chunk to write in bytes, if needed. Defaults to 1024<em>1024</em>15.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def cacheSet(self, key:str, value, version:int=0, expireAt:int=0, local=True, CHUNK_SIZE=1024*1024*15):
+    &#34;&#34;&#34;
+    Set a value in the cache.
+    Args:
+        key (str): The key of the value to set.
+        value (object): The value to set.
+        version (int): The version of the cache (if the call to cacheGet requires a different version, the cache will be considered expired). Defaults to 0.            expireAt (int): The timestamp at which the value expires. Defaults to 0.
+        expireAt (int): The timestamp at which the value expires in milliseconds. 0 = never. Defaults to 0.
+        local (bool): Whether to store the value locally or remotely. Defaults to True.
+        CHUNK_SIZE (int): The size of each chunk to write in bytes, if needed. Defaults to 1024*1024*15.
+    &#34;&#34;&#34;
+    try:
+        dataBytes = pickle.dumps(value)
+        if local:
+            fullPath = os.path.join(self._cachePath, key)
+            with open(fullPath, &#34;wb&#34;) as f:
+                f.write(dataBytes)
+            with open(fullPath+&#34;.meta.json&#34;, &#34;w&#34;) as f:
+                f.write(json.dumps({&#34;version&#34;:version, &#34;expireAt&#34;:expireAt}))
+        else:
+            client = self._node._getClient()
+            def write_data():
+                for j in range(0, len(dataBytes), CHUNK_SIZE):
+                    chunk = bytes(dataBytes[j:min(j+CHUNK_SIZE, len(dataBytes))])                   
+                    request = rpc_pb2.RpcCacheSetRequest(
+                        key=key, 
+                        data=chunk,
+                        expireAt=expireAt,
+                        version=version
+                    )
+                    yield request                              
+            res=await client.cacheSet(write_data())
+            return res.success
+    except Exception as e:
+        self._node.getLogger().error(&#34;Error setting cache &#34;+str(e))
+        return False</code></pre>
+</details>
+</dd>
+<dt id="openagents.JobContext.JobContext.close"><code class="name flex">
+<span>async def <span class="ident">close</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Close the job context.
+Free up resources, submit pending logs.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def close(self):
+    &#34;&#34;&#34;
+    Close the job context.
+    Free up resources, submit pending logs.
+    &#34;&#34;&#34;
+    for disk in self._disksById.values():
+        await disk.close()
+    for disk in self._disksByUrl.values():
+        await disk.close()
+    for disk in self._diskByName.values():
+        await disk.close()
+    self._disksById = {}
+    self._disksByUrl = {}
+    self._diskByName = {}
+    self.logger.close()</code></pre>
+</details>
+</dd>
+<dt id="openagents.JobContext.JobContext.createStorage"><code class="name flex">
+<span>async def <span class="ident">createStorage</span></span>(<span>self, name: str = None, encryptionKey: str = None, includeEncryptionKeyInUrl: str = None) ‑> <a title="openagents.Disk.Disk" href="Disk.html#openagents.Disk.Disk">Disk</a></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Create a storage disk.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
+<dd>Optional: The name of the disk.</dd>
+<dt><strong><code>encryptionKey</code></strong> :&ensp;<code>str</code></dt>
+<dd>Optional: The encryption key of the disk.</dd>
+<dt><strong><code>includeEncryptionKeyInUrl</code></strong> :&ensp;<code>str</code></dt>
+<dd>Optional: Whether to include the encryption key in the URL.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Disk</code></dt>
+<dd>The disk object.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def createStorage(self,name:str=None,encryptionKey:str=None,includeEncryptionKeyInUrl:str=None) -&gt; Disk:
+    &#34;&#34;&#34;
+    Create a storage disk.
+    Args:
+        name (str): Optional: The name of the disk.
+        encryptionKey (str): Optional: The encryption key of the disk.
+        includeEncryptionKeyInUrl (str): Optional: Whether to include the encryption key in the URL.
+    Returns:
+        Disk: The disk object.
+    &#34;&#34;&#34;
+    if name in self._diskByName:
+        return self._diskByName[name]
+    
+    client = self._node._getClient()
+    url = (await client.createDisk(rpc_pb2.RpcCreateDiskRequest(
+        name=name,
+        encryptionKey=encryptionKey,
+        includeEncryptionKeyInUrl=includeEncryptionKeyInUrl
+    ))).url
+    diskId =( await client.openDisk(rpc_pb2.RpcOpenDiskRequest(url=url))).diskId
+    disk = Disk(id=diskId, url=url, node=self._node)
+    self._disksByUrl[url] = disk
+    self._disksById[diskId] = disk
+    if name:self._diskByName[name] = disk
+    return disk</code></pre>
+</details>
+</dd>
+<dt id="openagents.JobContext.JobContext.getJob"><code class="name flex">
+<span>def <span class="ident">getJob</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get the job object.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def getJob(self):
+    &#34;&#34;&#34;
+    Get the job object.
+    &#34;&#34;&#34;
+    return self.job</code></pre>
+</details>
+</dd>
+<dt id="openagents.JobContext.JobContext.getJobInput"><code class="name flex">
+<span>def <span class="ident">getJobInput</span></span>(<span>self, marker: str | None = None) ‑> <module 'JobInput_pb2' from '/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/openagents_grpc_proto/JobInput_pb2.py'></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def getJobInput(self,marker:str|None=None)-&gt;rpc_pb2.JobInput__pb2:
+    job=self.getJob()
+    for i in job.input:
+        if marker is None or i.marker == marker:
+            return i
+    return None</code></pre>
+</details>
+</dd>
+<dt id="openagents.JobContext.JobContext.getJobInputs"><code class="name flex">
+<span>def <span class="ident">getJobInputs</span></span>(<span>self, marker: str | None = None) ‑> list[<module 'JobInput_pb2' from '/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/openagents_grpc_proto/JobInput_pb2.py'>]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def getJobInputs(self,marker:str|None=None)-&gt;list[rpc_pb2.JobInput__pb2]:
+    job=self.getJob()
+    out=[]
+    for i in job.input:
+        if marker is None or i.marker == marker:
+            out.append(i)
+    return out</code></pre>
+</details>
+</dd>
+<dt id="openagents.JobContext.JobContext.getJobParamValue"><code class="name flex">
+<span>def <span class="ident">getJobParamValue</span></span>(<span>self, key, default: str = None) ‑> str</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def getJobParamValue(self,key,default:str=None)-&gt;str:
+    job=self.getJob()
+    for p in job.param:
+        if p.key == key:
+            return p.value[0]</code></pre>
+</details>
+</dd>
+<dt id="openagents.JobContext.JobContext.getJobParamValues"><code class="name flex">
+<span>def <span class="ident">getJobParamValues</span></span>(<span>self, key, default: list[str] = None) ‑> list[str]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def getJobParamValues(self,key,default:list[str]=None)-&gt;list[str]:
+    job=self.getJob()
+    for p in job.param:
+        if p.key == key:
+            return p.value
+    return default</code></pre>
+</details>
+</dd>
+<dt id="openagents.JobContext.JobContext.getLogger"><code class="name flex">
+<span>def <span class="ident">getLogger</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get the logger of the job.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def getLogger(self):
+    &#34;&#34;&#34;
+    Get the logger of the job.
+    &#34;&#34;&#34;
+    return self.logger</code></pre>
+</details>
+</dd>
+<dt id="openagents.JobContext.JobContext.getNode"><code class="name flex">
+<span>def <span class="ident">getNode</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get the node running this job</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def getNode(self):
+    &#34;&#34;&#34;
+    Get the node running this job
+    &#34;&#34;&#34;
+    return self._node</code></pre>
+</details>
+</dd>
+<dt id="openagents.JobContext.JobContext.getOutputFormat"><code class="name flex">
+<span>def <span class="ident">getOutputFormat</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def getOutputFormat(self):
+    job=self.getJob()
+    return job.outputFormat</code></pre>
+</details>
+</dd>
+<dt id="openagents.JobContext.JobContext.openStorage"><code class="name flex">
+<span>async def <span class="ident">openStorage</span></span>(<span>self, url: str) ‑> <a title="openagents.Disk.Disk" href="Disk.html#openagents.Disk.Disk">Disk</a></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Open a storage disk.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>url</code></strong> :&ensp;<code>str</code></dt>
+<dd>The URL of the disk.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Disk</code></dt>
+<dd>The disk object.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def openStorage(self, url:str)-&gt;Disk:
+    &#34;&#34;&#34;
+    Open a storage disk.
+    Args:
+        url (str): The URL of the disk.
+    Returns:
+        Disk: The disk object.
+    &#34;&#34;&#34;
+
+    if url in self._disksByUrl:
+        return self._disksByUrl[url]
+    client = self._node._getClient()
+    diskId =(await client.openDisk(rpc_pb2.RpcOpenDiskRequest(url=url))).diskId
+    disk =  Disk(id=diskId, url=url, node=self._node)
+    self._disksByUrl[url] = disk
+    self._disksById[diskId] = disk
+    return disk</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="openagents" href="index.html">openagents</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="openagents.JobContext.JobContext" href="#openagents.JobContext.JobContext">JobContext</a></code></h4>
+<ul class="two-column">
+<li><code><a title="openagents.JobContext.JobContext.cacheGet" href="#openagents.JobContext.JobContext.cacheGet">cacheGet</a></code></li>
+<li><code><a title="openagents.JobContext.JobContext.cacheSet" href="#openagents.JobContext.JobContext.cacheSet">cacheSet</a></code></li>
+<li><code><a title="openagents.JobContext.JobContext.close" href="#openagents.JobContext.JobContext.close">close</a></code></li>
+<li><code><a title="openagents.JobContext.JobContext.createStorage" href="#openagents.JobContext.JobContext.createStorage">createStorage</a></code></li>
+<li><code><a title="openagents.JobContext.JobContext.getJob" href="#openagents.JobContext.JobContext.getJob">getJob</a></code></li>
+<li><code><a title="openagents.JobContext.JobContext.getJobInput" href="#openagents.JobContext.JobContext.getJobInput">getJobInput</a></code></li>
+<li><code><a title="openagents.JobContext.JobContext.getJobInputs" href="#openagents.JobContext.JobContext.getJobInputs">getJobInputs</a></code></li>
+<li><code><a title="openagents.JobContext.JobContext.getJobParamValue" href="#openagents.JobContext.JobContext.getJobParamValue">getJobParamValue</a></code></li>
+<li><code><a title="openagents.JobContext.JobContext.getJobParamValues" href="#openagents.JobContext.JobContext.getJobParamValues">getJobParamValues</a></code></li>
+<li><code><a title="openagents.JobContext.JobContext.getLogger" href="#openagents.JobContext.JobContext.getLogger">getLogger</a></code></li>
+<li><code><a title="openagents.JobContext.JobContext.getNode" href="#openagents.JobContext.JobContext.getNode">getNode</a></code></li>
+<li><code><a title="openagents.JobContext.JobContext.getOutputFormat" href="#openagents.JobContext.JobContext.getOutputFormat">getOutputFormat</a></code></li>
+<li><code><a title="openagents.JobContext.JobContext.openStorage" href="#openagents.JobContext.JobContext.openStorage">openStorage</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>
