@@ -222,7 +222,7 @@ class JobContext:
         job=self.getJob()
         for p in job.param:
             if p.key == key:
-                return p.value
+                return p.value or default
         return default
 
     
@@ -230,7 +230,8 @@ class JobContext:
         job=self.getJob()
         for p in job.param:
             if p.key == key:
-                return p.value[0]
+                return p.value[0] or default
+        return default 
 
     def getJobInputs(self,marker:str|None=None)-&gt;list[rpc_pb2.JobInput__pb2]:
         job=self.getJob()
@@ -456,7 +457,7 @@ class JobContext:
         job=self.getJob()
         for p in job.param:
             if p.key == key:
-                return p.value
+                return p.value or default
         return default
 
     
@@ -464,7 +465,8 @@ class JobContext:
         job=self.getJob()
         for p in job.param:
             if p.key == key:
-                return p.value[0]
+                return p.value[0] or default
+        return default 
 
     def getJobInputs(self,marker:str|None=None)-&gt;list[rpc_pb2.JobInput__pb2]:
         job=self.getJob()
@@ -751,7 +753,8 @@ Free up resources, submit pending logs.</p></div>
     job=self.getJob()
     for p in job.param:
         if p.key == key:
-            return p.value[0]</code></pre>
+            return p.value[0] or default
+    return default </code></pre>
 </details>
 </dd>
 <dt id="openagents.JobContext.JobContext.getJobParamValues"><code class="name flex">
@@ -767,7 +770,7 @@ Free up resources, submit pending logs.</p></div>
     job=self.getJob()
     for p in job.param:
         if p.key == key:
-            return p.value
+            return p.value or default
     return default</code></pre>
 </details>
 </dd>
