@@ -57,7 +57,37 @@ class OpenObserveLogger:
             with self.wait:
                 self.wait.notify_all()
         
- 
+    def close(self):
+        """
+        Immediately flush all the logs to OpenObserve and shutdown the logger.
+        """
+        self.flushThread.shutdown()
+        if not self.buffer.empty():
+            batch = []
+            while not self.buffer.empty():
+                batch.append(self.buffer.get())
+            self._flushToOpenObserve(batch)
+            
+        
+    def _flushToOpenObserve(self, batch):
+        try:
+            url = self.options["baseUrl"]+"/api/"+self.options["org"]+"/"+self.options["stream"]+"/_json"   
+            basicAuth = self.options["auth"]
+            if not isinstance(basicAuth, str):
+                if "username" in basicAuth and "password" in basicAuth:
+                    basicAuth = basicAuth["username"]+":"+basicAuth["password"]
+                    basicAuth = base64.b64encode(basicAuth.encode()).decode()
+            headers = {
+                'Content-Type': 'application/json',
+                "Authorization": "Basic "+basicAuth if basicAuth else None
+            }
+            res = requests.post(url, headers=headers, json=batch)
+            if res.status_code != 200:
+                print("Error flushing log "+str(res.status_code))
+        except Exception as e:
+            print("Error flushing log "+str(e))
+
+
     def flushLoop(self):
         while True:
             with self.wait:
@@ -65,23 +95,7 @@ class OpenObserveLogger:
             batch = []
             while not self.buffer.empty():
                 batch.append(self.buffer.get())         
-            try:
-                url = self.options["baseUrl"]+"/api/"+self.options["org"]+"/"+self.options["stream"]+"/_json"   
-                basicAuth = self.options["auth"]
-                if not isinstance(basicAuth, str):
-                    if "username" in basicAuth and "password" in basicAuth:
-                        basicAuth = basicAuth["username"]+":"+basicAuth["password"]
-                        basicAuth = base64.b64encode(basicAuth.encode()).decode()
-                headers = {
-                    'Content-Type': 'application/json',
-                    "Authorization": "Basic "+basicAuth if basicAuth else None
-                }
-                res = requests.post(url, headers=headers, json=batch)
-                if res.status_code != 200:
-                    print("Error flushing log "+str(res.status_code))
-            except Exception as e:
-                print("Error flushing log "+str(e))
-
+            self._flushToOpenObserve(batch)
 
 
     
@@ -104,22 +118,22 @@ class Logger :
 
     """
 
-    def __init__(self, name:str, version:str, runner=None, level=None, enableOobs:bool=True):
+    def __init__(self, name:str, version:str, jobId:str=None, runnerLogger=None, level=None, enableOobs:bool=True):
         """
         Create a new logger.
         Args:
             name (str): The name of the logger.
             version (str): The version of the logger.
-            runner (object): The runner to log to. Defaults to None.
+            runnerLogger : The function to log to the runner.
             level (LogLevel): Optional: The minimum level of logs to print. Defaults to environment variable or "debug".
             enableOobs (bool): Optional: Whether to enable logging to OpenObserve. Defaults to True.
         """
         self.name=name or "main"
-        self.runner=runner
-        self.logger=None
+        self.runnerLogger=runnerLogger
         self.logLevel=None
         self.oobsLogger=None
         self.version=version
+        self.jobId=jobId
         
         logLevelName = os.getenv('LOG_LEVEL', "debug")
         oobsLogLevelName= os.getenv('OPENOBSERVE_LOGLEVEL', logLevelName)
@@ -147,7 +161,8 @@ class Logger :
                 "flushInterval": int(os.getenv('OPENOBSERVE_FLUSHINTERVAL', 0)),
                 "meta":{
                     "appName": self.name,
-                    "appVersion": self.version
+                    "appVersion": self.version,
+                    "jobId": self.jobId
                 }                
             })
 
@@ -171,13 +186,13 @@ class Logger :
 
         if levelV >= minLevel:
             date = time.strftime("%Y-%m-%d %H:%M:%S")
-            print(date+" ["+self.name+":"+self.version+"] : "+level+" : "+message)
+            print(date+" ["+self.name+":"+self.version+"] "+(("("+self.jobId+")") if self.jobId else "")+": "+level+" : "+message)
 
         if self.oobsLogger and levelV >= minObsLevel:
             self.oobsLogger.log(level, message)
         
-        if self.runner and levelV >= minNostrLevel:
-            self.runner._log(message)
+        if self.runnerLogger and levelV >= minNostrLevel:
+            self.runnerLogger(message)
 
 
     def log(self, *args):
@@ -204,5 +219,10 @@ class Logger :
 
     def finest(self, *args):
         self._log("finest", args)
+
+    def close(self):
+        if self.oobsLogger:
+            self.obsLogger.close()
+
 
        

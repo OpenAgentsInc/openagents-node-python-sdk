@@ -17,7 +17,7 @@ from openagents import JobRunner,OpenAgentsNode,NodeConfig,RunnerConfig
 # Define a runner
 class MyRunner (JobRunner):
     def __init__(self):
-        # Set the runner metadata, template and filters
+        # Set the runner metadata, template and filter
         super().__init__(\
             RunnerConfig(
                 meta={
@@ -31,18 +31,11 @@ class MyRunner (JobRunner):
                     "website": "https://example.com",
                     "author": "John Doe",
                 },
-                filters=[ 
-                    {
-                        "filterByKind":5003,
-                        #AND
-                        "filterByRunOn": "my-new-action"
-                    }, # OR
-                    {
-                        "filterByKind": 5003,
-                        #AND
-                        "filterByRunOn": "my-new-action-alt"
-                    }
-                ],
+                filter={
+                    "filterByKind":5003,
+                    #AND
+                    "filterByRunOn": "my-new-action"
+                },
                 template="""
                 {
                     "kind": {{meta.kind}},
@@ -61,26 +54,26 @@ class MyRunner (JobRunner):
                 sockets={
                     "in": {
                         "k": {
-                            "type":"number",
+                            "title": "K",
                             "description":"This is a number"
-                            "default": "0"
+                            "type":"integer",
+                            "default": 0,
                         },
                         "queries": {
+                            "title": "Queries",
                             "type":"array",
                             "description":"This is an array of queries",
-                            "schema": {
-                                "value":{
-                                    "type":"string",
-                                    "description":"This is a query value"
-                                }# Last item in schema is repeated for any remaining items
+                            "items": {
+                                "type":"string"
                             }
                         }
                     },
                     "out": {
-                        "content": {
+                        "contentType": {
+                            "title": "Content Type",
                             "type": "string",
                             "description": "The content of the event",
-                            "value": "application/json"
+                            "default": "application/json"
                         }
                     }
                 }

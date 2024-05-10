@@ -9,7 +9,8 @@ from .JobRunner import JobRunner
 from .NodeConfig import NodeConfig
 from .Logger import Logger
 from typing import Union
-
+from .JobContext import JobContext
+import json
 class HeaderAdderInterceptor(grpc.aio.UnaryUnaryClientInterceptor):
     """
     An interceptor for GRPC that adds headers to outgoing requests.
@@ -42,45 +43,34 @@ class OpenAgentsNode:
     - NODE_TOKEN: The token of the node. Defaults to None.
     """
   
-    def __init__(self, metaOrConfig: Union[dict, NodeConfig]):
-        meta=None
-        if isinstance(metaOrConfig, NodeConfig):
-            meta = metaOrConfig.getMeta()
-        else:
-            meta = metaOrConfig
-        self.nextNodeAnnounce = 0
-        self.nodeName = ""
-        self.nodeIcon = ""
-        self.nodeDescription = ""
+    def __init__(self, config: NodeConfig):
+        
+        self.meta = config.getMeta()
+            
+        self.nextNodeAnnounce = 0        
         self.channel = None
         self.rpcClient = None
-        self.runners=[]
+        self.registeredRunners=[]
         self.poolAddress = None
         self.poolPort = None
-        self.failedJobsTracker = []
+        self.lockedJobs = []
         self.isLooping = False
         self.logger = None
         self.loopInterval = 100
         
-        name = ""
-        icon = ""
-        description = ""
-        version = "0.0.1"
-
-        name = meta["name"] if "name" in meta else None
-        icon = meta["picture"] if "picture" in meta else None
-        description = meta["about"] if "about" in meta else None
-        version = meta["version"] if "version" in meta else None
-
-        self.nodeName = name or os.getenv('NODE_NAME', "OpenAgentsNode")
-        self.nodeIcon = icon or os.getenv('NODE_ICON', "")
-        self.nodeVersion = version or os.getenv('NODE_VERSION', "0.0.1")
-        self.nodeDescription = description or  os.getenv('NODE_DESCRIPTION', "")
+    
+        self.nodeName = self.meta["name"]
+        self.nodeIcon =  self.meta["picture"]
+        self.nodeVersion =  self.meta["version"]
+        self.nodeDescription =  self.meta["description"]
 
         self.channel = None
         self.rpcClient = None
         self.logger = Logger(self.nodeName,self.nodeVersion)
         self.logger.info("Starting "+self.nodeName+" v"+self.nodeVersion)
+
+    def getMeta(self):
+        return self.meta
 
     def registerRunner(self, runner:JobRunner) -> None:
         """
@@ -88,8 +78,10 @@ class OpenAgentsNode:
         Args:
             runner (JobRunner): The runner to register.
         """
-        runner.logger=Logger(self.nodeName+"."+runner.__class__.__name__,self.nodeVersion,runner)
-        self.runners.append(runner)
+        self.registeredRunners.append({
+            "runner": runner,
+            "nextAnnouncementTimestamp": 0    
+        })
 
     def getLogger(self):
         """
@@ -173,62 +165,76 @@ class OpenAgentsNode:
         Args:
             runner (JobRunner): The runner to execute the job.
         """
-        if runner not in self.runners:
+        if len([x for x in self.registeredRunners if x["runner"]==runner])==0:
             del self.runnerTasks[runner]
             return
+        
         try:
+            if not runner.initialized:
+                runner.initialized=True
+                await runner.init(self)
             client = self._getClient()
-            #for runner in self.runners:
             jobs=[]
-            for filter in runner._filters:
-                jobs.extend((await client.getPendingJobs(rpc_pb2.RpcGetPendingJobs(
-                    filterByRunOn =  filter["filterByRunOn"] if "filterByRunOn" in filter else None,
-                    filterByCustomer = filter["filterByCustomer"] if "filterByCustomer" in filter else None,
-                    filterByDescription = filter["filterByDescription"] if "filterByDescription" in filter else None,
-                    filterById = filter["filterById"] if "filterById" in filter else None,
-                    filterByKind  = filter["filterByKind"] if "filterByKind" in filter else None,
-                    wait=60000,
-                    # exclude failed jobs
-                    excludeId = [x[0] for x in self.failedJobsTracker if time.time()-x[1] < 60]
-                ))).jobs)    
+            filter = runner.getFilter()
+            self.lockedJobs = [x for x in self.lockedJobs if time.time()-x[1] < 60]
+            jobs.extend((await client.getPendingJobs(rpc_pb2.RpcGetPendingJobs(
+                filterByRunOn =  filter["filterByRunOn"] if "filterByRunOn" in filter else None,
+                filterByCustomer = filter["filterByCustomer"] if "filterByCustomer" in filter else None,
+                filterByDescription = filter["filterByDescription"] if "filterByDescription" in filter else None,
+                filterById = filter["filterById"] if "filterById" in filter else None,
+                filterByKind  = filter["filterByKind"] if "filterByKind" in filter else None,
+                wait=60000,
+                # exclude failed jobs
+                excludeId = [x[0] for x in self.lockedJobs]
+            ))).jobs)    
+
+            if len(jobs)>0 : self.getLogger().log(str(len(jobs))+" pending jobs for "+runner.__class__.__name__)
+            else : self.getLogger().finer("No pending jobs for "+runner.__class__.__name__)
             
-            for job in jobs:           
-                if len(jobs)>0 : runner.getLogger().log(str(len(jobs))+" pending jobs")
-                else : runner.getLogger().log("No pending jobs")
+            for job in jobs:              
                 wasAccepted=False
                 t=time.time()   
+                ctx = JobContext(self,runner,job)
                 try:
-                    client = self._getClient() # Reconnect client for each job
-                    if not await runner.canRun(job):
+                    client = self._getClient() # Refresh client connection if needed
+                    if not await runner.canRun(ctx):
+                        await ctx.close()
                         continue
+                    self.lockedJobs.append([job.id, time.time()])
                     await self._acceptJob(job.id)
                     wasAccepted = True
-                    runner.getLogger().info("Job started on node "+self.nodeName)  
-                    runner._setNode(self)
-                    runner._setJob(job)
-                    await runner.preRun(job)
+
+
+                    
+                    ctx.getLogger().info("Job started on node "+self.nodeName)  
+                    
+                    await runner.preRun(ctx)
                     async def task():
                         try:
-                            output=await runner.run(job)    
-                            await runner.postRun(job)                            
-                            runner.getLogger().info("Job completed in "+str(time.time()-t)+" seconds on node "+self.nodeName, job.id)                
+                            output=await runner.run(ctx) 
+                            await runner.postRun(ctx)                  
+                            ctx.getLogger().info("Job completed in "+str(time.time()-t)+" seconds on node "+self.nodeName, job.id)                
                             await client.completeJob(rpc_pb2.RpcJobOutput(jobId=job.id, output=output))
                         except Exception as e:
-                            self.failedJobsTracker.append([job.id, time.time()])
-                            runner.getLogger().error("Job failed in "+str(time.time()-t)+" seconds on node "+self.nodeName+" with error "+str(e), job.id)
+                            ctx.getLogger().error("Job failed in "+str(time.time()-t)+" seconds on node "+self.nodeName+" with error "+str(e), job.id)
                             if wasAccepted:
                                 await client.cancelJob(rpc_pb2.RpcCancelJob(jobId=job.id, reason=str(e)))
                             traceback.print_exc()
-                    asyncio.create_task(task())
+                        await ctx.close()
+                    if not runner.isRunInParallel():
+                        await task()
+                    else:
+                        asyncio.create_task(task())
                 except Exception as e:
-                    self.failedJobsTracker.append([job.id, time.time()])
-                    runner.getLogger().error("Job failed in "+str(time.time()-t)+" seconds on node "+self.nodeName+" with error "+str(e), job.id)
+                    ctx.getLogger().error("Job failed in "+str(time.time()-t)+" seconds on node "+self.nodeName+" with error "+str(e), job.id)
+                    await ctx.close()
                     if wasAccepted:
                         await client.cancelJob(rpc_pb2.RpcCancelJob(jobId=job.id, reason=str(e)))
                     traceback.print_exc()
+
         except Exception as e:
             traceback.print_exc()
-            runner.getLogger().error("Error executing runner "+str(e))
+            self.getLogger().error("Error executing runner "+str(e))
             await asyncio.sleep(5000.0/1000.0)
         self.runnerTasks[runner]=asyncio.create_task(self._executePendingJobForRunner(runner))
 
@@ -238,8 +244,9 @@ class OpenAgentsNode:
         """
         Execute all pending jobs for all runners.
         """
-        for runner in self.runners:
+        for reg in self.registeredRunners:
             try:
+                runner = reg["runner"]
                 if not runner in self.runnerTasks:
                     self.runnerTasks[runner]=asyncio.create_task(self._executePendingJobForRunner(runner))
             except Exception as e:
@@ -267,20 +274,20 @@ class OpenAgentsNode:
                     self.getLogger().error("Error announcing node "+ str(e), None)
                     self.nextNodeAnnounce = int(time.time()*1000) + 5000
 
-            for runner in self.runners:
+            for reg in self.registeredRunners:
                 try:
-                    if time_ms >= runner._nextAnnouncementTimestamp:
+                    if time_ms >=  reg["nextAnnouncementTimestamp"]:
                         client = self._getClient()
                         res = await client.announceEventTemplate(rpc_pb2.RpcAnnounceTemplateRequest(
-                            meta=runner._meta,
-                            template=runner._template,
-                            sockets=runner._sockets
+                            meta=json.dumps(reg["runner"].getMeta()),
+                            template=reg["runner"].getTemplate(),
+                            sockets=json.dumps(reg["runner"].getSockets())
                         ))
-                        runner._nextAnnouncementTimestamp = int(time.time()*1000) + res.refreshInterval
+                        reg["nextAnnouncementTimestamp"] = int(time.time()*1000) + res.refreshInterval
                         self.getLogger().log("Template announced, next announcement in "+str(res.refreshInterval)+" ms")
                 except Exception as e:
                     self.getLogger().error("Error announcing template "+ str(e), None)
-                    runner._nextAnnouncementTimestamp = int(time.time()*1000) + 5000
+                    reg["nextAnnouncementTimestamp"] = int(time.time()*1000) + 5000
         except Exception as e:
             self.getLogger().error("Error reannouncing "+str(e), None)
         await asyncio.sleep(5000.0/1000.0)
@@ -290,7 +297,7 @@ class OpenAgentsNode:
         """
         The main loop of the node.
         """
-        promises = [runner.loop() for runner in self.runners]
+        promises = [reg["runner"].loop(self) for reg in self.registeredRunners]
         await asyncio.gather(*promises)
         self.isLooping = False
         await asyncio.sleep(self.loopInterval/1000.0)
