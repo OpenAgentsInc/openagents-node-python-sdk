@@ -81,26 +81,26 @@ class MyRunner (JobRunner):
         )
 
 
-    async def canRun(self,job):
+    async def canRun(self,ctx):
         # Custom job filtering logic
         return True
 
-    async def preRun(self, job):
+    async def preRun(self, ctx):
         # Do something before running the job
         pass
 
-    async def run(self,job):
+    async def run(self,ctx):
         # Do something
         print("Running job",job.id)
         # Finish the job
         jobOutput=""
         return jobOutput
     
-    async def postRun(self, job):
+    async def postRun(self, ctx):
         # Do something after running the job
         pass
 
-    #async def loop(self):
+    #async def loop(self, node):
     #    This is called by the main loop NODE_TPS times per second
     #    Usually you won't need to implement this, but can be useful in some cases
 
