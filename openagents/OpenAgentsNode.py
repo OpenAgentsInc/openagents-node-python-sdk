@@ -11,22 +11,43 @@ from .Logger import Logger
 from typing import Union
 from .JobContext import JobContext
 import json
-class HeaderAdderInterceptor(grpc.aio.UnaryUnaryClientInterceptor):
+class HeaderAdderInterceptor(
+    grpc.aio.ClientInterceptor     
+):
     """
     An interceptor for GRPC that adds headers to outgoing requests.
     """
     def __init__(self, headers):
         self._headers = headers
 
-    async def intercept_unary_unary(self, continuation, client_call_details, request):
+  
+
+    async def _intercept(self, continuation, client_call_details, request_or_iterator):
         metadata = client_call_details.metadata
         if not metadata:
-            metadata=grpc.aio.Metadata()
+            metadata = grpc.aio.Metadata()
         for header in self._headers:
             metadata.add(header[0], header[1])
         new_client_call_details = client_call_details._replace(metadata=metadata)
-        response = await continuation(new_client_call_details, request)
+        response = await continuation(new_client_call_details, request_or_iterator)
         return response
+
+class HeaderAdderInterceptor0(grpc.aio.UnaryStreamClientInterceptor,HeaderAdderInterceptor):
+    async def intercept_unary_stream(self, continuation, client_call_details, request):
+        return await self._intercept(continuation, client_call_details, request)
+
+class HeaderAdderInterceptor1(grpc.aio.StreamUnaryClientInterceptor,HeaderAdderInterceptor):
+    async def intercept_stream_unary(self, continuation, client_call_details, request_iterator):
+        return await self._intercept(continuation, client_call_details, request_iterator)
+    
+class HeaderAdderInterceptor2(grpc.aio.StreamStreamClientInterceptor,HeaderAdderInterceptor):
+    async def intercept_stream_stream(self, continuation, client_call_details, request_iterator):
+        return await self._intercept(continuation, client_call_details, request_iterator)
+
+class HeaderAdderInterceptor3(grpc.aio.UnaryUnaryClientInterceptor,HeaderAdderInterceptor):
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        return await self._intercept(continuation, client_call_details, request)
+ 
 
 class OpenAgentsNode:
     """
@@ -44,7 +65,6 @@ class OpenAgentsNode:
     """
   
     def __init__(self, config: NodeConfig):
-        
         self.meta = config.getMeta()
             
         self.nextNodeAnnounce = 0        
@@ -115,8 +135,10 @@ class OpenAgentsNode:
                     ("authorization", str(nodeToken))
                 ]
                 if interceptors is None: interceptors=[]
-                interceptor=HeaderAdderInterceptor(metadata)        
-                interceptors.append(interceptor)
+                interceptors.append(HeaderAdderInterceptor0(metadata))
+                interceptors.append(HeaderAdderInterceptor1(metadata))
+                interceptors.append(HeaderAdderInterceptor2(metadata))
+                interceptors.append(HeaderAdderInterceptor3(metadata))
                 
 
             if self.poolSsl:
