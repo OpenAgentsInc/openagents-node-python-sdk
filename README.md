@@ -23,13 +23,13 @@ class MyRunner (JobRunner):
                 meta={
                     "kind":5003,
                     "name":"My Action",
-                    "description":"This is a new action"
+                    "description":"This is a new action",
                     "tos": "https://example.com/tos",
                     "privacy": "https://example.com/privacy",
                     "picture": "https://example.com/icon.png",
-                    "tags": ["tag1","tag2"]
+                    "tags": ["tag1","tag2"],
                     "website": "https://example.com",
-                    "author": "John Doe",
+                    "author": "John Doe"
                 },
                 filter={
                     "filterByKind":5003,
