@@ -137,8 +137,8 @@ class Logger :
         self.version=version
         self.jobId=jobId
         
-        logLevelName = os.getenv('LOG_LEVEL', "debug")
-        oobsLogLevelName= os.getenv('OPENOBSERVE_LOGLEVEL', logLevelName)
+        logLevelName = os.getenv('LOG_LEVEL', "finer" if not os.getenv('PRODUCTION', None) else "info")
+        oobsLogLevelName= os.getenv('OPENOBSERVE_LOGLEVEL', "info")
 
         self.logLevel = self._levelToValue(logLevelName)
         self.oobsLogLevel = self._levelToValue(oobsLogLevelName)
