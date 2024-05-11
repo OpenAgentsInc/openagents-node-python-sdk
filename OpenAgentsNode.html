@@ -39,22 +39,43 @@ from .Logger import Logger
 from typing import Union
 from .JobContext import JobContext
 import json
-class HeaderAdderInterceptor(grpc.aio.UnaryUnaryClientInterceptor):
+class HeaderAdderInterceptor(
+    grpc.aio.ClientInterceptor     
+):
     &#34;&#34;&#34;
     An interceptor for GRPC that adds headers to outgoing requests.
     &#34;&#34;&#34;
     def __init__(self, headers):
         self._headers = headers
 
-    async def intercept_unary_unary(self, continuation, client_call_details, request):
+  
+
+    async def _intercept(self, continuation, client_call_details, request_or_iterator):
         metadata = client_call_details.metadata
         if not metadata:
-            metadata=grpc.aio.Metadata()
+            metadata = grpc.aio.Metadata()
         for header in self._headers:
             metadata.add(header[0], header[1])
         new_client_call_details = client_call_details._replace(metadata=metadata)
-        response = await continuation(new_client_call_details, request)
+        response = await continuation(new_client_call_details, request_or_iterator)
         return response
+
+class HeaderAdderInterceptor0(grpc.aio.UnaryStreamClientInterceptor,HeaderAdderInterceptor):
+    async def intercept_unary_stream(self, continuation, client_call_details, request):
+        return await self._intercept(continuation, client_call_details, request)
+
+class HeaderAdderInterceptor1(grpc.aio.StreamUnaryClientInterceptor,HeaderAdderInterceptor):
+    async def intercept_stream_unary(self, continuation, client_call_details, request_iterator):
+        return await self._intercept(continuation, client_call_details, request_iterator)
+    
+class HeaderAdderInterceptor2(grpc.aio.StreamStreamClientInterceptor,HeaderAdderInterceptor):
+    async def intercept_stream_stream(self, continuation, client_call_details, request_iterator):
+        return await self._intercept(continuation, client_call_details, request_iterator)
+
+class HeaderAdderInterceptor3(grpc.aio.UnaryUnaryClientInterceptor,HeaderAdderInterceptor):
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        return await self._intercept(continuation, client_call_details, request)
+ 
 
 class OpenAgentsNode:
     &#34;&#34;&#34;
@@ -72,7 +93,6 @@ class OpenAgentsNode:
     &#34;&#34;&#34;
   
     def __init__(self, config: NodeConfig):
-        
         self.meta = config.getMeta()
             
         self.nextNodeAnnounce = 0        
@@ -143,8 +163,10 @@ class OpenAgentsNode:
                     (&#34;authorization&#34;, str(nodeToken))
                 ]
                 if interceptors is None: interceptors=[]
-                interceptor=HeaderAdderInterceptor(metadata)        
-                interceptors.append(interceptor)
+                interceptors.append(HeaderAdderInterceptor0(metadata))
+                interceptors.append(HeaderAdderInterceptor1(metadata))
+                interceptors.append(HeaderAdderInterceptor2(metadata))
+                interceptors.append(HeaderAdderInterceptor3(metadata))
                 
 
             if self.poolSsl:
@@ -380,31 +402,267 @@ class OpenAgentsNode:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class HeaderAdderInterceptor(grpc.aio.UnaryUnaryClientInterceptor):
+<pre><code class="python">class HeaderAdderInterceptor(
+    grpc.aio.ClientInterceptor     
+):
     &#34;&#34;&#34;
     An interceptor for GRPC that adds headers to outgoing requests.
     &#34;&#34;&#34;
     def __init__(self, headers):
         self._headers = headers
 
-    async def intercept_unary_unary(self, continuation, client_call_details, request):
+  
+
+    async def _intercept(self, continuation, client_call_details, request_or_iterator):
         metadata = client_call_details.metadata
         if not metadata:
-            metadata=grpc.aio.Metadata()
+            metadata = grpc.aio.Metadata()
         for header in self._headers:
             metadata.add(header[0], header[1])
         new_client_call_details = client_call_details._replace(metadata=metadata)
-        response = await continuation(new_client_call_details, request)
+        response = await continuation(new_client_call_details, request_or_iterator)
         return response</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li>grpc.aio._interceptor.UnaryUnaryClientInterceptor</li>
+<li>grpc.aio._interceptor.ClientInterceptor</li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="openagents.OpenAgentsNode.HeaderAdderInterceptor0" href="#openagents.OpenAgentsNode.HeaderAdderInterceptor0">HeaderAdderInterceptor0</a></li>
+<li><a title="openagents.OpenAgentsNode.HeaderAdderInterceptor1" href="#openagents.OpenAgentsNode.HeaderAdderInterceptor1">HeaderAdderInterceptor1</a></li>
+<li><a title="openagents.OpenAgentsNode.HeaderAdderInterceptor2" href="#openagents.OpenAgentsNode.HeaderAdderInterceptor2">HeaderAdderInterceptor2</a></li>
+<li><a title="openagents.OpenAgentsNode.HeaderAdderInterceptor3" href="#openagents.OpenAgentsNode.HeaderAdderInterceptor3">HeaderAdderInterceptor3</a></li>
+</ul>
+</dd>
+<dt id="openagents.OpenAgentsNode.HeaderAdderInterceptor0"><code class="flex name class">
+<span>class <span class="ident">HeaderAdderInterceptor0</span></span>
+<span>(</span><span>headers)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Affords intercepting unary-stream invocations.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class HeaderAdderInterceptor0(grpc.aio.UnaryStreamClientInterceptor,HeaderAdderInterceptor):
+    async def intercept_unary_stream(self, continuation, client_call_details, request):
+        return await self._intercept(continuation, client_call_details, request)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>grpc.aio._interceptor.UnaryStreamClientInterceptor</li>
+<li><a title="openagents.OpenAgentsNode.HeaderAdderInterceptor" href="#openagents.OpenAgentsNode.HeaderAdderInterceptor">HeaderAdderInterceptor</a></li>
 <li>grpc.aio._interceptor.ClientInterceptor</li>
 </ul>
 <h3>Methods</h3>
 <dl>
-<dt id="openagents.OpenAgentsNode.HeaderAdderInterceptor.intercept_unary_unary"><code class="name flex">
+<dt id="openagents.OpenAgentsNode.HeaderAdderInterceptor0.intercept_unary_stream"><code class="name flex">
+<span>async def <span class="ident">intercept_unary_stream</span></span>(<span>self, continuation, client_call_details, request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Intercepts a unary-stream invocation asynchronously.</p>
+<p>The function could return the call object or an asynchronous
+iterator, in case of being an asyncrhonous iterator this will
+become the source of the reads done by the caller.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>continuation</code></strong></dt>
+<dd>A coroutine that proceeds with the invocation by
+executing the next interceptor in the chain or invoking the
+actual RPC on the underlying Channel. It is the interceptor's
+responsibility to call it if it decides to move the RPC forward.
+The interceptor can use
+<code>call = await continuation(client_call_details, request)</code>
+to continue with the RPC. <code>continuation</code> returns the call to the
+RPC.</dd>
+<dt><strong><code>client_call_details</code></strong></dt>
+<dd>A ClientCallDetails object describing the
+outgoing RPC.</dd>
+<dt><strong><code>request</code></strong></dt>
+<dd>The request value for the RPC.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>The RPC Call or an asynchronous iterator.</p>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>AioRpcError</code></dt>
+<dd>Indicating that the RPC terminated with non-OK status.</dd>
+<dt><code>asyncio.CancelledError</code></dt>
+<dd>Indicating that the RPC was canceled.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def intercept_unary_stream(self, continuation, client_call_details, request):
+    return await self._intercept(continuation, client_call_details, request)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="openagents.OpenAgentsNode.HeaderAdderInterceptor1"><code class="flex name class">
+<span>class <span class="ident">HeaderAdderInterceptor1</span></span>
+<span>(</span><span>headers)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Affords intercepting stream-unary invocations.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class HeaderAdderInterceptor1(grpc.aio.StreamUnaryClientInterceptor,HeaderAdderInterceptor):
+    async def intercept_stream_unary(self, continuation, client_call_details, request_iterator):
+        return await self._intercept(continuation, client_call_details, request_iterator)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>grpc.aio._interceptor.StreamUnaryClientInterceptor</li>
+<li><a title="openagents.OpenAgentsNode.HeaderAdderInterceptor" href="#openagents.OpenAgentsNode.HeaderAdderInterceptor">HeaderAdderInterceptor</a></li>
+<li>grpc.aio._interceptor.ClientInterceptor</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="openagents.OpenAgentsNode.HeaderAdderInterceptor1.intercept_stream_unary"><code class="name flex">
+<span>async def <span class="ident">intercept_stream_unary</span></span>(<span>self, continuation, client_call_details, request_iterator)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Intercepts a stream-unary invocation asynchronously.</p>
+<p>Within the interceptor the usage of the call methods like <code>write</code> or
+even awaiting the call should be done carefully, since the caller
+could be expecting an untouched call, for example for start writing
+messages to it.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>continuation</code></strong></dt>
+<dd>A coroutine that proceeds with the invocation by
+executing the next interceptor in the chain or invoking the
+actual RPC on the underlying Channel. It is the interceptor's
+responsibility to call it if it decides to move the RPC forward.
+The interceptor can use
+<code>call = await continuation(client_call_details, request_iterator)</code>
+to continue with the RPC. <code>continuation</code> returns the call to the
+RPC.</dd>
+<dt><strong><code>client_call_details</code></strong></dt>
+<dd>A ClientCallDetails object describing the
+outgoing RPC.</dd>
+<dt><strong><code>request_iterator</code></strong></dt>
+<dd>The request iterator that will produce requests
+for the RPC.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>The RPC Call.</p>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>AioRpcError</code></dt>
+<dd>Indicating that the RPC terminated with non-OK status.</dd>
+<dt><code>asyncio.CancelledError</code></dt>
+<dd>Indicating that the RPC was canceled.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def intercept_stream_unary(self, continuation, client_call_details, request_iterator):
+    return await self._intercept(continuation, client_call_details, request_iterator)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="openagents.OpenAgentsNode.HeaderAdderInterceptor2"><code class="flex name class">
+<span>class <span class="ident">HeaderAdderInterceptor2</span></span>
+<span>(</span><span>headers)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Affords intercepting stream-stream invocations.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class HeaderAdderInterceptor2(grpc.aio.StreamStreamClientInterceptor,HeaderAdderInterceptor):
+    async def intercept_stream_stream(self, continuation, client_call_details, request_iterator):
+        return await self._intercept(continuation, client_call_details, request_iterator)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>grpc.aio._interceptor.StreamStreamClientInterceptor</li>
+<li><a title="openagents.OpenAgentsNode.HeaderAdderInterceptor" href="#openagents.OpenAgentsNode.HeaderAdderInterceptor">HeaderAdderInterceptor</a></li>
+<li>grpc.aio._interceptor.ClientInterceptor</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="openagents.OpenAgentsNode.HeaderAdderInterceptor2.intercept_stream_stream"><code class="name flex">
+<span>async def <span class="ident">intercept_stream_stream</span></span>(<span>self, continuation, client_call_details, request_iterator)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Intercepts a stream-stream invocation asynchronously.</p>
+<p>Within the interceptor the usage of the call methods like <code>write</code> or
+even awaiting the call should be done carefully, since the caller
+could be expecting an untouched call, for example for start writing
+messages to it.</p>
+<p>The function could return the call object or an asynchronous
+iterator, in case of being an asyncrhonous iterator this will
+become the source of the reads done by the caller.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>continuation</code></strong></dt>
+<dd>A coroutine that proceeds with the invocation by
+executing the next interceptor in the chain or invoking the
+actual RPC on the underlying Channel. It is the interceptor's
+responsibility to call it if it decides to move the RPC forward.
+The interceptor can use
+<code>call = await continuation(client_call_details, request_iterator)</code>
+to continue with the RPC. <code>continuation</code> returns the call to the
+RPC.</dd>
+<dt><strong><code>client_call_details</code></strong></dt>
+<dd>A ClientCallDetails object describing the
+outgoing RPC.</dd>
+<dt><strong><code>request_iterator</code></strong></dt>
+<dd>The request iterator that will produce requests
+for the RPC.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>The RPC Call or an asynchronous iterator.</p>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>AioRpcError</code></dt>
+<dd>Indicating that the RPC terminated with non-OK status.</dd>
+<dt><code>asyncio.CancelledError</code></dt>
+<dd>Indicating that the RPC was canceled.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def intercept_stream_stream(self, continuation, client_call_details, request_iterator):
+    return await self._intercept(continuation, client_call_details, request_iterator)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="openagents.OpenAgentsNode.HeaderAdderInterceptor3"><code class="flex name class">
+<span>class <span class="ident">HeaderAdderInterceptor3</span></span>
+<span>(</span><span>headers)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Affords intercepting unary-unary invocations.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class HeaderAdderInterceptor3(grpc.aio.UnaryUnaryClientInterceptor,HeaderAdderInterceptor):
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        return await self._intercept(continuation, client_call_details, request)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>grpc.aio._interceptor.UnaryUnaryClientInterceptor</li>
+<li><a title="openagents.OpenAgentsNode.HeaderAdderInterceptor" href="#openagents.OpenAgentsNode.HeaderAdderInterceptor">HeaderAdderInterceptor</a></li>
+<li>grpc.aio._interceptor.ClientInterceptor</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="openagents.OpenAgentsNode.HeaderAdderInterceptor3.intercept_unary_unary"><code class="name flex">
 <span>async def <span class="ident">intercept_unary_unary</span></span>(<span>self, continuation, client_call_details, request)</span>
 </code></dt>
 <dd>
@@ -440,14 +698,7 @@ outgoing RPC.</dd>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">async def intercept_unary_unary(self, continuation, client_call_details, request):
-    metadata = client_call_details.metadata
-    if not metadata:
-        metadata=grpc.aio.Metadata()
-    for header in self._headers:
-        metadata.add(header[0], header[1])
-    new_client_call_details = client_call_details._replace(metadata=metadata)
-    response = await continuation(new_client_call_details, request)
-    return response</code></pre>
+    return await self._intercept(continuation, client_call_details, request)</code></pre>
 </details>
 </dd>
 </dl>
@@ -488,7 +739,6 @@ The node can be configured with the following environment variables:
     &#34;&#34;&#34;
   
     def __init__(self, config: NodeConfig):
-        
         self.meta = config.getMeta()
             
         self.nextNodeAnnounce = 0        
@@ -559,8 +809,10 @@ The node can be configured with the following environment variables:
                     (&#34;authorization&#34;, str(nodeToken))
                 ]
                 if interceptors is None: interceptors=[]
-                interceptor=HeaderAdderInterceptor(metadata)        
-                interceptors.append(interceptor)
+                interceptors.append(HeaderAdderInterceptor0(metadata))
+                interceptors.append(HeaderAdderInterceptor1(metadata))
+                interceptors.append(HeaderAdderInterceptor2(metadata))
+                interceptors.append(HeaderAdderInterceptor3(metadata))
                 
 
             if self.poolSsl:
@@ -940,8 +1192,29 @@ environment variable POOL_PORT.</dd>
 <ul>
 <li>
 <h4><code><a title="openagents.OpenAgentsNode.HeaderAdderInterceptor" href="#openagents.OpenAgentsNode.HeaderAdderInterceptor">HeaderAdderInterceptor</a></code></h4>
+</li>
+<li>
+<h4><code><a title="openagents.OpenAgentsNode.HeaderAdderInterceptor0" href="#openagents.OpenAgentsNode.HeaderAdderInterceptor0">HeaderAdderInterceptor0</a></code></h4>
 <ul class="">
-<li><code><a title="openagents.OpenAgentsNode.HeaderAdderInterceptor.intercept_unary_unary" href="#openagents.OpenAgentsNode.HeaderAdderInterceptor.intercept_unary_unary">intercept_unary_unary</a></code></li>
+<li><code><a title="openagents.OpenAgentsNode.HeaderAdderInterceptor0.intercept_unary_stream" href="#openagents.OpenAgentsNode.HeaderAdderInterceptor0.intercept_unary_stream">intercept_unary_stream</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="openagents.OpenAgentsNode.HeaderAdderInterceptor1" href="#openagents.OpenAgentsNode.HeaderAdderInterceptor1">HeaderAdderInterceptor1</a></code></h4>
+<ul class="">
+<li><code><a title="openagents.OpenAgentsNode.HeaderAdderInterceptor1.intercept_stream_unary" href="#openagents.OpenAgentsNode.HeaderAdderInterceptor1.intercept_stream_unary">intercept_stream_unary</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="openagents.OpenAgentsNode.HeaderAdderInterceptor2" href="#openagents.OpenAgentsNode.HeaderAdderInterceptor2">HeaderAdderInterceptor2</a></code></h4>
+<ul class="">
+<li><code><a title="openagents.OpenAgentsNode.HeaderAdderInterceptor2.intercept_stream_stream" href="#openagents.OpenAgentsNode.HeaderAdderInterceptor2.intercept_stream_stream">intercept_stream_stream</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="openagents.OpenAgentsNode.HeaderAdderInterceptor3" href="#openagents.OpenAgentsNode.HeaderAdderInterceptor3">HeaderAdderInterceptor3</a></code></h4>
+<ul class="">
+<li><code><a title="openagents.OpenAgentsNode.HeaderAdderInterceptor3.intercept_unary_unary" href="#openagents.OpenAgentsNode.HeaderAdderInterceptor3.intercept_unary_unary">intercept_unary_unary</a></code></li>
 </ul>
 </li>
 <li>
