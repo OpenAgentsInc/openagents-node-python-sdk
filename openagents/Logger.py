@@ -61,12 +61,11 @@ class OpenObserveLogger:
         """
         Immediately flush all the logs to OpenObserve and shutdown the logger.
         """
+        while not self.buffer.empty():
+            self.wait.notify_all()
+            print("Flushing logs... waiting...")
+            time.sleep(0.1)
         self.flushThread.shutdown()
-        if not self.buffer.empty():
-            batch = []
-            while not self.buffer.empty():
-                batch.append(self.buffer.get())
-            self._flushToOpenObserve(batch)
             
         
     def _flushToOpenObserve(self, batch):
@@ -93,8 +92,11 @@ class OpenObserveLogger:
             with self.wait:
                 self.wait.wait(self.flushInterval/1000)
             batch = []
-            while not self.buffer.empty():
-                batch.append(self.buffer.get())         
+            while not self.buffer.empty() and len(batch) < self.batchSize:
+                try:
+                    batch.append(self.buffer.get(block=False))
+                except queue.Empty:
+                    break         
             self._flushToOpenObserve(batch)
 
 
