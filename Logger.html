@@ -59,8 +59,13 @@ class OpenObserveLogger:
             self.batchSize = 21        
         self.buffer = queue.Queue()
         self.wait = Condition()
-        self.flushThread = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        self.flushThread = concurrent.futures.ThreadPoolExecutor(max_workers=3)
         self.flushThread.submit(self.flushLoop)
+        
+
+    def batchReady(self):
+        with self.wait:
+            self.wait.notify_all()
 
     def log(self, level:LogLevel, message:str, timestamp:int=None):
         &#34;&#34;&#34;
@@ -82,17 +87,20 @@ class OpenObserveLogger:
 
         self.buffer.put(log_entry)
         if self.buffer.qsize() &gt;= self.batchSize:
-            self.wait.notify_all()
+            self.flushThread.submit(self.batchReady)
+
+    def _close(self):
+        while not self.buffer.empty():
+            with self.wait:
+                self.wait.notify_all()
+            time.sleep(0.1)
+        self.flushThread.shutdown()
         
     def close(self):
         &#34;&#34;&#34;
         Immediately flush all the logs to OpenObserve and shutdown the logger.
         &#34;&#34;&#34;
-        while not self.buffer.empty():
-            self.wait.notify_all()
-            print(&#34;Flushing logs... waiting...&#34;)
-            time.sleep(0.1)
-        self.flushThread.shutdown()
+        self.flushThread.submit(self._close)        
             
         
     def _flushToOpenObserve(self, batch):
@@ -118,7 +126,8 @@ class OpenObserveLogger:
 
     def flushLoop(self):
         while True:
-            self.wait.wait(self.flushInterval/1000)
+            with self.wait:
+                self.wait.wait(self.flushInterval/1000)
             batch = []
             while not self.buffer.empty() and len(batch) &lt; self.batchSize:
                 try:
@@ -179,6 +188,7 @@ class Logger :
 
         oobsEndPoint = os.getenv(&#39;OPENOBSERVE_ENDPOINT&#39;, None)
         if enableOobs and oobsEndPoint:
+            
             self.oobsLogger = OpenObserveLogger({
                 &#34;baseUrl&#34;: oobsEndPoint,
                 &#34;org&#34;: os.getenv(&#39;OPENOBSERVE_ORG&#39;, &#34;default&#34;),
@@ -349,6 +359,7 @@ The logger can be configured with the following environment variables:
 
         oobsEndPoint = os.getenv(&#39;OPENOBSERVE_ENDPOINT&#39;, None)
         if enableOobs and oobsEndPoint:
+            
             self.oobsLogger = OpenObserveLogger({
                 &#34;baseUrl&#34;: oobsEndPoint,
                 &#34;org&#34;: os.getenv(&#39;OPENOBSERVE_ORG&#39;, &#34;default&#34;),
@@ -571,8 +582,13 @@ The logger can be configured with the following environment variables:
             self.batchSize = 21        
         self.buffer = queue.Queue()
         self.wait = Condition()
-        self.flushThread = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        self.flushThread = concurrent.futures.ThreadPoolExecutor(max_workers=3)
         self.flushThread.submit(self.flushLoop)
+        
+
+    def batchReady(self):
+        with self.wait:
+            self.wait.notify_all()
 
     def log(self, level:LogLevel, message:str, timestamp:int=None):
         &#34;&#34;&#34;
@@ -594,17 +610,20 @@ The logger can be configured with the following environment variables:
 
         self.buffer.put(log_entry)
         if self.buffer.qsize() &gt;= self.batchSize:
-            self.wait.notify_all()
+            self.flushThread.submit(self.batchReady)
+
+    def _close(self):
+        while not self.buffer.empty():
+            with self.wait:
+                self.wait.notify_all()
+            time.sleep(0.1)
+        self.flushThread.shutdown()
         
     def close(self):
         &#34;&#34;&#34;
         Immediately flush all the logs to OpenObserve and shutdown the logger.
         &#34;&#34;&#34;
-        while not self.buffer.empty():
-            self.wait.notify_all()
-            print(&#34;Flushing logs... waiting...&#34;)
-            time.sleep(0.1)
-        self.flushThread.shutdown()
+        self.flushThread.submit(self._close)        
             
         
     def _flushToOpenObserve(self, batch):
@@ -630,7 +649,8 @@ The logger can be configured with the following environment variables:
 
     def flushLoop(self):
         while True:
-            self.wait.wait(self.flushInterval/1000)
+            with self.wait:
+                self.wait.wait(self.flushInterval/1000)
             batch = []
             while not self.buffer.empty() and len(batch) &lt; self.batchSize:
                 try:
@@ -641,6 +661,20 @@ The logger can be configured with the following environment variables:
 </details>
 <h3>Methods</h3>
 <dl>
+<dt id="openagents.Logger.OpenObserveLogger.batchReady"><code class="name flex">
+<span>def <span class="ident">batchReady</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def batchReady(self):
+    with self.wait:
+        self.wait.notify_all()</code></pre>
+</details>
+</dd>
 <dt id="openagents.Logger.OpenObserveLogger.close"><code class="name flex">
 <span>def <span class="ident">close</span></span>(<span>self)</span>
 </code></dt>
@@ -654,11 +688,7 @@ The logger can be configured with the following environment variables:
     &#34;&#34;&#34;
     Immediately flush all the logs to OpenObserve and shutdown the logger.
     &#34;&#34;&#34;
-    while not self.buffer.empty():
-        self.wait.notify_all()
-        print(&#34;Flushing logs... waiting...&#34;)
-        time.sleep(0.1)
-    self.flushThread.shutdown()</code></pre>
+    self.flushThread.submit(self._close)        </code></pre>
 </details>
 </dd>
 <dt id="openagents.Logger.OpenObserveLogger.flushLoop"><code class="name flex">
@@ -672,7 +702,8 @@ The logger can be configured with the following environment variables:
 </summary>
 <pre><code class="python">def flushLoop(self):
     while True:
-        self.wait.wait(self.flushInterval/1000)
+        with self.wait:
+            self.wait.wait(self.flushInterval/1000)
         batch = []
         while not self.buffer.empty() and len(batch) &lt; self.batchSize:
             try:
@@ -720,7 +751,7 @@ The logger can be configured with the following environment variables:
 
     self.buffer.put(log_entry)
     if self.buffer.qsize() &gt;= self.batchSize:
-        self.wait.notify_all()</code></pre>
+        self.flushThread.submit(self.batchReady)</code></pre>
 </details>
 </dd>
 </dl>
@@ -758,6 +789,7 @@ The logger can be configured with the following environment variables:
 <li>
 <h4><code><a title="openagents.Logger.OpenObserveLogger" href="#openagents.Logger.OpenObserveLogger">OpenObserveLogger</a></code></h4>
 <ul class="">
+<li><code><a title="openagents.Logger.OpenObserveLogger.batchReady" href="#openagents.Logger.OpenObserveLogger.batchReady">batchReady</a></code></li>
 <li><code><a title="openagents.Logger.OpenObserveLogger.close" href="#openagents.Logger.OpenObserveLogger.close">close</a></code></li>
 <li><code><a title="openagents.Logger.OpenObserveLogger.flushLoop" href="#openagents.Logger.OpenObserveLogger.flushLoop">flushLoop</a></code></li>
 <li><code><a title="openagents.Logger.OpenObserveLogger.log" href="#openagents.Logger.OpenObserveLogger.log">log</a></code></li>
