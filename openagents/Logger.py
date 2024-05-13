@@ -31,8 +31,13 @@ class OpenObserveLogger:
             self.batchSize = 21        
         self.buffer = queue.Queue()
         self.wait = Condition()
-        self.flushThread = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        self.flushThread = concurrent.futures.ThreadPoolExecutor(max_workers=3)
         self.flushThread.submit(self.flushLoop)
+        
+
+    def batchReady(self):
+        with self.wait:
+            self.wait.notify_all()
 
     def log(self, level:LogLevel, message:str, timestamp:int=None):
         """
@@ -46,7 +51,7 @@ class OpenObserveLogger:
         log_entry = {
             'level': level,
             '_timestamp': timestamp or int(time.time()*1000),
-            'message': message
+            'log': message
         }
         meta=self.options["meta"] if "meta" in self.options else {}
         for key in meta:
@@ -54,18 +59,20 @@ class OpenObserveLogger:
 
         self.buffer.put(log_entry)
         if self.buffer.qsize() >= self.batchSize:
+            self.flushThread.submit(self.batchReady)
+
+    def _close(self):
+        while not self.buffer.empty():
             with self.wait:
                 self.wait.notify_all()
+            time.sleep(0.1)
+        self.flushThread.shutdown()
         
     def close(self):
         """
         Immediately flush all the logs to OpenObserve and shutdown the logger.
         """
-        while not self.buffer.empty():
-            self.wait.notify_all()
-            print("Flushing logs... waiting...")
-            time.sleep(0.1)
-        self.flushThread.shutdown()
+        self.flushThread.submit(self._close)        
             
         
     def _flushToOpenObserve(self, batch):
@@ -153,6 +160,7 @@ class Logger :
 
         oobsEndPoint = os.getenv('OPENOBSERVE_ENDPOINT', None)
         if enableOobs and oobsEndPoint:
+            
             self.oobsLogger = OpenObserveLogger({
                 "baseUrl": oobsEndPoint,
                 "org": os.getenv('OPENOBSERVE_ORG', "default"),
