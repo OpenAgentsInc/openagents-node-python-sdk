@@ -46,7 +46,7 @@ class OpenObserveLogger:
         log_entry = {
             'level': level,
             '_timestamp': timestamp or int(time.time()*1000),
-            'message': message
+            'log': message
         }
         meta=self.options["meta"] if "meta" in self.options else {}
         for key in meta:
@@ -54,8 +54,7 @@ class OpenObserveLogger:
 
         self.buffer.put(log_entry)
         if self.buffer.qsize() >= self.batchSize:
-            with self.wait:
-                self.wait.notify_all()
+            self.wait.notify_all()
         
     def close(self):
         """
@@ -91,8 +90,7 @@ class OpenObserveLogger:
 
     def flushLoop(self):
         while True:
-            with self.wait:
-                self.wait.wait(self.flushInterval/1000)
+            self.wait.wait(self.flushInterval/1000)
             batch = []
             while not self.buffer.empty() and len(batch) < self.batchSize:
                 try:
