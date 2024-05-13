@@ -74,7 +74,7 @@ class OpenObserveLogger:
         log_entry = {
             &#39;level&#39;: level,
             &#39;_timestamp&#39;: timestamp or int(time.time()*1000),
-            &#39;message&#39;: message
+            &#39;log&#39;: message
         }
         meta=self.options[&#34;meta&#34;] if &#34;meta&#34; in self.options else {}
         for key in meta:
@@ -82,22 +82,22 @@ class OpenObserveLogger:
 
         self.buffer.put(log_entry)
         if self.buffer.qsize() &gt;= self.batchSize:
-            with self.wait:
-                self.wait.notify_all()
+            self.wait.notify_all()
         
     def close(self):
         &#34;&#34;&#34;
         Immediately flush all the logs to OpenObserve and shutdown the logger.
         &#34;&#34;&#34;
+        while not self.buffer.empty():
+            self.wait.notify_all()
+            print(&#34;Flushing logs... waiting...&#34;)
+            time.sleep(0.1)
         self.flushThread.shutdown()
-        if not self.buffer.empty():
-            batch = []
-            while not self.buffer.empty():
-                batch.append(self.buffer.get())
-            self._flushToOpenObserve(batch)
             
         
     def _flushToOpenObserve(self, batch):
+        if len(batch) == 0:
+            return
         try:
             url = self.options[&#34;baseUrl&#34;]+&#34;/api/&#34;+self.options[&#34;org&#34;]+&#34;/&#34;+self.options[&#34;stream&#34;]+&#34;/_json&#34;   
             basicAuth = self.options[&#34;auth&#34;]
@@ -118,11 +118,13 @@ class OpenObserveLogger:
 
     def flushLoop(self):
         while True:
-            with self.wait:
-                self.wait.wait(self.flushInterval/1000)
+            self.wait.wait(self.flushInterval/1000)
             batch = []
-            while not self.buffer.empty():
-                batch.append(self.buffer.get())         
+            while not self.buffer.empty() and len(batch) &lt; self.batchSize:
+                try:
+                    batch.append(self.buffer.get(block=False))
+                except queue.Empty:
+                    break         
             self._flushToOpenObserve(batch)
 
 
@@ -163,8 +165,8 @@ class Logger :
         self.version=version
         self.jobId=jobId
         
-        logLevelName = os.getenv(&#39;LOG_LEVEL&#39;, &#34;debug&#34;)
-        oobsLogLevelName= os.getenv(&#39;OPENOBSERVE_LOGLEVEL&#39;, logLevelName)
+        logLevelName = os.getenv(&#39;LOG_LEVEL&#39;, &#34;finer&#34; if not os.getenv(&#39;PRODUCTION&#39;, None) else &#34;info&#34;)
+        oobsLogLevelName= os.getenv(&#39;OPENOBSERVE_LOGLEVEL&#39;, &#34;info&#34;)
 
         self.logLevel = self._levelToValue(logLevelName)
         self.oobsLogLevel = self._levelToValue(oobsLogLevelName)
@@ -333,8 +335,8 @@ The logger can be configured with the following environment variables:
         self.version=version
         self.jobId=jobId
         
-        logLevelName = os.getenv(&#39;LOG_LEVEL&#39;, &#34;debug&#34;)
-        oobsLogLevelName= os.getenv(&#39;OPENOBSERVE_LOGLEVEL&#39;, logLevelName)
+        logLevelName = os.getenv(&#39;LOG_LEVEL&#39;, &#34;finer&#34; if not os.getenv(&#39;PRODUCTION&#39;, None) else &#34;info&#34;)
+        oobsLogLevelName= os.getenv(&#39;OPENOBSERVE_LOGLEVEL&#39;, &#34;info&#34;)
 
         self.logLevel = self._levelToValue(logLevelName)
         self.oobsLogLevel = self._levelToValue(oobsLogLevelName)
@@ -584,7 +586,7 @@ The logger can be configured with the following environment variables:
         log_entry = {
             &#39;level&#39;: level,
             &#39;_timestamp&#39;: timestamp or int(time.time()*1000),
-            &#39;message&#39;: message
+            &#39;log&#39;: message
         }
         meta=self.options[&#34;meta&#34;] if &#34;meta&#34; in self.options else {}
         for key in meta:
@@ -592,22 +594,22 @@ The logger can be configured with the following environment variables:
 
         self.buffer.put(log_entry)
         if self.buffer.qsize() &gt;= self.batchSize:
-            with self.wait:
-                self.wait.notify_all()
+            self.wait.notify_all()
         
     def close(self):
         &#34;&#34;&#34;
         Immediately flush all the logs to OpenObserve and shutdown the logger.
         &#34;&#34;&#34;
+        while not self.buffer.empty():
+            self.wait.notify_all()
+            print(&#34;Flushing logs... waiting...&#34;)
+            time.sleep(0.1)
         self.flushThread.shutdown()
-        if not self.buffer.empty():
-            batch = []
-            while not self.buffer.empty():
-                batch.append(self.buffer.get())
-            self._flushToOpenObserve(batch)
             
         
     def _flushToOpenObserve(self, batch):
+        if len(batch) == 0:
+            return
         try:
             url = self.options[&#34;baseUrl&#34;]+&#34;/api/&#34;+self.options[&#34;org&#34;]+&#34;/&#34;+self.options[&#34;stream&#34;]+&#34;/_json&#34;   
             basicAuth = self.options[&#34;auth&#34;]
@@ -628,11 +630,13 @@ The logger can be configured with the following environment variables:
 
     def flushLoop(self):
         while True:
-            with self.wait:
-                self.wait.wait(self.flushInterval/1000)
+            self.wait.wait(self.flushInterval/1000)
             batch = []
-            while not self.buffer.empty():
-                batch.append(self.buffer.get())         
+            while not self.buffer.empty() and len(batch) &lt; self.batchSize:
+                try:
+                    batch.append(self.buffer.get(block=False))
+                except queue.Empty:
+                    break         
             self._flushToOpenObserve(batch)</code></pre>
 </details>
 <h3>Methods</h3>
@@ -650,12 +654,11 @@ The logger can be configured with the following environment variables:
     &#34;&#34;&#34;
     Immediately flush all the logs to OpenObserve and shutdown the logger.
     &#34;&#34;&#34;
-    self.flushThread.shutdown()
-    if not self.buffer.empty():
-        batch = []
-        while not self.buffer.empty():
-            batch.append(self.buffer.get())
-        self._flushToOpenObserve(batch)</code></pre>
+    while not self.buffer.empty():
+        self.wait.notify_all()
+        print(&#34;Flushing logs... waiting...&#34;)
+        time.sleep(0.1)
+    self.flushThread.shutdown()</code></pre>
 </details>
 </dd>
 <dt id="openagents.Logger.OpenObserveLogger.flushLoop"><code class="name flex">
@@ -669,11 +672,13 @@ The logger can be configured with the following environment variables:
 </summary>
 <pre><code class="python">def flushLoop(self):
     while True:
-        with self.wait:
-            self.wait.wait(self.flushInterval/1000)
+        self.wait.wait(self.flushInterval/1000)
         batch = []
-        while not self.buffer.empty():
-            batch.append(self.buffer.get())         
+        while not self.buffer.empty() and len(batch) &lt; self.batchSize:
+            try:
+                batch.append(self.buffer.get(block=False))
+            except queue.Empty:
+                break         
         self._flushToOpenObserve(batch)</code></pre>
 </details>
 </dd>
@@ -707,7 +712,7 @@ The logger can be configured with the following environment variables:
     log_entry = {
         &#39;level&#39;: level,
         &#39;_timestamp&#39;: timestamp or int(time.time()*1000),
-        &#39;message&#39;: message
+        &#39;log&#39;: message
     }
     meta=self.options[&#34;meta&#34;] if &#34;meta&#34; in self.options else {}
     for key in meta:
@@ -715,8 +720,7 @@ The logger can be configured with the following environment variables:
 
     self.buffer.put(log_entry)
     if self.buffer.qsize() &gt;= self.batchSize:
-        with self.wait:
-            self.wait.notify_all()</code></pre>
+        self.wait.notify_all()</code></pre>
 </details>
 </dd>
 </dl>
