@@ -69,6 +69,8 @@ class OpenObserveLogger:
             
         
     def _flushToOpenObserve(self, batch):
+        if len(batch) == 0:
+            return
         try:
             url = self.options["baseUrl"]+"/api/"+self.options["org"]+"/"+self.options["stream"]+"/_json"   
             basicAuth = self.options["auth"]
