@@ -48,7 +48,7 @@ class MyRunner (JobRunner):
                     "tags": [
                         ["param","run-on", "my-new-action" ],                             
                         ["param", "k", "{{in.k}}"],
-                        ["output" , "{{out.content}}"],
+                        ["output" , "{{in.outputType}}"],
                         {{#in.queries}}
                         ["i", "{{value}}", "{{type}}", "",  "query"],
                         {{/in.queries}}                       
@@ -72,14 +72,19 @@ class MyRunner (JobRunner):
                             "items": {
                                 "type":"string"
                             }
+                        },
+                        "outputType": {
+                            "title": "Output Type",
+                            "type": "string",
+                            "description": "The output type of the event",
+                            "default": "application/json"
                         }
                     },
                     "out": {
-                        "contentType": {
-                            "title": "Content Type",
+                        "output": {
+                            "title": "Output",
                             "type": "string",
-                            "description": "The content of the event",
-                            "default": "application/json"
+                            "description": "The output content"
                         }
                     }
                 }
