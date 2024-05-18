@@ -332,9 +332,9 @@ class OpenAgentsNode:
         Should not be called, use start() instead.
         """
         await asyncio.sleep(5000.0/1000.0)
-        self.poolAddress = poolAddress or os.getenv('POOL_ADDRESS', "127.0.0.1")
-        self.poolPort = poolPort or int(os.getenv('POOL_PORT', "5000"))
-        self.poolSsl = poolSsl or os.getenv('POOL_SSL', "false")== "true"
+        self.poolAddress = poolAddress or os.getenv('POOL_ADDRESS', "playground.openagents.com")
+        self.poolPort = poolPort or int(os.getenv('POOL_PORT', "6021"))
+        self.poolSsl = poolSsl or os.getenv('POOL_SSL', "true")== "true"
         self.loopInterval = 1000.0/int(os.getenv('NODE_TPS', "10"))
 
         await self._loop()
