@@ -3,6 +3,9 @@
 
 A Python SDK for developing OpenAgents nodes.
 
+## Requirements
+- Python 3.11 or higher
+
 ## Installation
 
 ```bash
@@ -18,7 +21,7 @@ from openagents import JobRunner,OpenAgentsNode,NodeConfig,RunnerConfig
 class MyRunner (JobRunner):
     def __init__(self):
         # Set the runner metadata, template and filter
-        super().__init__(\
+        super().__init__(
             RunnerConfig(
                 meta={
                     "kind":5003,
@@ -31,12 +34,14 @@ class MyRunner (JobRunner):
                     "website": "https://example.com",
                     "author": "John Doe"
                 },
+                # Filters are regular expressions that are used to define which jobs this runner can run
                 filter={
-                    "filterByKind":5003,
+                    "filterByKind": "5003",
                     #AND
                     "filterByRunOn": "my-new-action"
                 },
-                template="""
+                # Mustache template (https://mustache.github.io/)
+                template=""" 
                 {
                     "kind": {{meta.kind}},
                     "created_at": {{sys.timestamp_seconds}},
@@ -51,18 +56,19 @@ class MyRunner (JobRunner):
                     ],
                     "content":""
                 }""",
+                 # In JSON Schema format (https://json-schema.org/)
                 sockets={
                     "in": {
                         "k": {
-                            "title": "K",
-                            "description":"This is a number"
+                            "title": "MyNumber",
+                            "description":"This is a number",
                             "type":"integer",
                             "default": 0,
                         },
                         "queries": {
-                            "title": "Queries",
+                            "title": "MyArray",
                             "type":"array",
-                            "description":"This is an array of queries",
+                            "description":"This is an array of strings",
                             "items": {
                                 "type":"string"
                             }
@@ -113,13 +119,26 @@ class MyRunner (JobRunner):
 myNode = OpenAgentsNode(NodeConfig(
     meta={
         "name":"My Node",
-        "description":"This is a new node"
+        "description":"This is a new node",
         "version": "1.0"
     }
 ))
+
 # Register the runner (you can register multiple runners)
 myNode.registerRunner(MyRunner())
 # Start the node
 myNode.start()
-
 ```
+For more information check the [OpenAgents Python SDK Documentation](https://docs.openagents.com/python-sdk)
+
+----
+*Note: By default the node will connect to OpenAgents open pool *(playground.openagents.com 6021 ssl)*, this can be changed by setting the following environment variables:*
+
+```bash
+POOL_ADDRESS="playground.openagents.com" # custom pool address
+POOL_PORT="6021" #  custom pool port
+POOL_SSL="true" # or "false"
+```
+*To learn how to host your own pool check the [Running a Pool](https://docs.openagents.com/running-a-pool) documentation.*
+
+
