@@ -48,7 +48,7 @@ class MyRunner (JobRunner):
                     "tags": [
                         ["param","run-on", "my-new-action" ],                             
                         ["param", "k", "{{in.k}}"],
-                        ["output" , "{{out.content}}"]
+                        ["output" , "{{out.content}}"],
                         {{#in.queries}}
                         ["i", "{{value}}", "{{type}}", "",  "query"],
                         {{/in.queries}}                       
