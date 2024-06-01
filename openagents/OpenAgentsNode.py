@@ -62,6 +62,7 @@ class OpenAgentsNode:
     - POOL_SSL: Whether to use SSL for the pool. Defaults to False.
     - NODE_TPS: The ticks per second of the node main loop. Defaults to 10.
     - NODE_TOKEN: The token of the node. Defaults to None.
+    - NWC: Nostr wallet connect URL
     """
   
     def __init__(self, config: NodeConfig):
@@ -130,17 +131,24 @@ class OpenAgentsNode:
 
             interceptors=None
             nodeToken = os.getenv('NODE_TOKEN', None)
-            if nodeToken:
-                metadata=[
-                    ("authorization", str(nodeToken))
-                ]
+            nwc = os.getenv('NWC', None)
+            if nodeToken or nwc:
+                metadata=[]
+                if nwc:
+                    metadata.append(("nwc", str(nwc)))                
+                if nodeToken:
+                    metadata.append(("authorization", str(nodeToken)))                    
                 if interceptors is None: interceptors=[]
                 interceptors.append(HeaderAdderInterceptor0(metadata))
                 interceptors.append(HeaderAdderInterceptor1(metadata))
                 interceptors.append(HeaderAdderInterceptor2(metadata))
                 interceptors.append(HeaderAdderInterceptor3(metadata))
                 
-
+            if nwc:
+                self.getLogger().info("This node can receive payments")
+            else: 
+                self.getLogger().warn("This node is not enabled to receive payments. Please provide a NWC URL")
+                
             if self.poolSsl:
                 self.channel = grpc.aio.secure_channel(self.poolAddress+":"+str(self.poolPort), grpc.ssl_channel_credentials(),options,interceptors=interceptors)
             else:
@@ -198,6 +206,9 @@ class OpenAgentsNode:
             client = self._getClient()
             jobs=[]
             filter = runner.getFilter()
+            meta = runner.getMeta()
+            prices = "prices" in meta and meta["prices"] or None
+
             self.lockedJobs = [x for x in self.lockedJobs if time.time()-x[1] < 60]
             jobs.extend((await client.getPendingJobs(rpc_pb2.RpcGetPendingJobs(
                 filterByRunOn =  filter["filterByRunOn"] if "filterByRunOn" in filter else None,
@@ -205,6 +216,7 @@ class OpenAgentsNode:
                 filterByDescription = filter["filterByDescription"] if "filterByDescription" in filter else None,
                 filterById = filter["filterById"] if "filterById" in filter else None,
                 filterByKind  = filter["filterByKind"] if "filterByKind" in filter else None,
+                filterByBids = prices,
                 wait=60000,
                 # exclude failed jobs
                 excludeId = [x[0] for x in self.lockedJobs]
@@ -312,7 +324,7 @@ class OpenAgentsNode:
                     reg["nextAnnouncementTimestamp"] = int(time.time()*1000) + 5000
         except Exception as e:
             self.getLogger().error("Error reannouncing "+str(e), None)
-        await asyncio.sleep(5000.0/1000.0)
+        await asyncio.sleep(5)
         asyncio.create_task(self.reannounce())
   
     async def _loop(self):
