@@ -90,6 +90,7 @@ class OpenAgentsNode:
     - POOL_SSL: Whether to use SSL for the pool. Defaults to False.
     - NODE_TPS: The ticks per second of the node main loop. Defaults to 10.
     - NODE_TOKEN: The token of the node. Defaults to None.
+    - NWC: Nostr wallet connect URL
     &#34;&#34;&#34;
   
     def __init__(self, config: NodeConfig):
@@ -158,17 +159,24 @@ class OpenAgentsNode:
 
             interceptors=None
             nodeToken = os.getenv(&#39;NODE_TOKEN&#39;, None)
-            if nodeToken:
-                metadata=[
-                    (&#34;authorization&#34;, str(nodeToken))
-                ]
+            nwc = os.getenv(&#39;NWC&#39;, None)
+            if nodeToken or nwc:
+                metadata=[]
+                if nwc:
+                    metadata.append((&#34;nwc&#34;, str(nwc)))                
+                if nodeToken:
+                    metadata.append((&#34;authorization&#34;, str(nodeToken)))                    
                 if interceptors is None: interceptors=[]
                 interceptors.append(HeaderAdderInterceptor0(metadata))
                 interceptors.append(HeaderAdderInterceptor1(metadata))
                 interceptors.append(HeaderAdderInterceptor2(metadata))
                 interceptors.append(HeaderAdderInterceptor3(metadata))
                 
-
+            if nwc:
+                self.getLogger().info(&#34;This node can receive payments&#34;)
+            else: 
+                self.getLogger().warn(&#34;This node is not enabled to receive payments. Please provide a NWC URL&#34;)
+                
             if self.poolSsl:
                 self.channel = grpc.aio.secure_channel(self.poolAddress+&#34;:&#34;+str(self.poolPort), grpc.ssl_channel_credentials(),options,interceptors=interceptors)
             else:
@@ -226,6 +234,9 @@ class OpenAgentsNode:
             client = self._getClient()
             jobs=[]
             filter = runner.getFilter()
+            meta = runner.getMeta()
+            prices = &#34;prices&#34; in meta and meta[&#34;prices&#34;] or None
+
             self.lockedJobs = [x for x in self.lockedJobs if time.time()-x[1] &lt; 60]
             jobs.extend((await client.getPendingJobs(rpc_pb2.RpcGetPendingJobs(
                 filterByRunOn =  filter[&#34;filterByRunOn&#34;] if &#34;filterByRunOn&#34; in filter else None,
@@ -233,6 +244,7 @@ class OpenAgentsNode:
                 filterByDescription = filter[&#34;filterByDescription&#34;] if &#34;filterByDescription&#34; in filter else None,
                 filterById = filter[&#34;filterById&#34;] if &#34;filterById&#34; in filter else None,
                 filterByKind  = filter[&#34;filterByKind&#34;] if &#34;filterByKind&#34; in filter else None,
+                filterByBids = prices,
                 wait=60000,
                 # exclude failed jobs
                 excludeId = [x[0] for x in self.lockedJobs]
@@ -340,7 +352,7 @@ class OpenAgentsNode:
                     reg[&#34;nextAnnouncementTimestamp&#34;] = int(time.time()*1000) + 5000
         except Exception as e:
             self.getLogger().error(&#34;Error reannouncing &#34;+str(e), None)
-        await asyncio.sleep(5000.0/1000.0)
+        await asyncio.sleep(5)
         asyncio.create_task(self.reannounce())
   
     async def _loop(self):
@@ -718,7 +730,8 @@ The node can be configured with the following environment variables:
 - POOL_PORT: The port of the pool. Defaults to 5000.
 - POOL_SSL: Whether to use SSL for the pool. Defaults to False.
 - NODE_TPS: The ticks per second of the node main loop. Defaults to 10.
-- NODE_TOKEN: The token of the node. Defaults to None.</p></div>
+- NODE_TOKEN: The token of the node. Defaults to None.
+- NWC: Nostr wallet connect URL</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -736,6 +749,7 @@ The node can be configured with the following environment variables:
     - POOL_SSL: Whether to use SSL for the pool. Defaults to False.
     - NODE_TPS: The ticks per second of the node main loop. Defaults to 10.
     - NODE_TOKEN: The token of the node. Defaults to None.
+    - NWC: Nostr wallet connect URL
     &#34;&#34;&#34;
   
     def __init__(self, config: NodeConfig):
@@ -804,17 +818,24 @@ The node can be configured with the following environment variables:
 
             interceptors=None
             nodeToken = os.getenv(&#39;NODE_TOKEN&#39;, None)
-            if nodeToken:
-                metadata=[
-                    (&#34;authorization&#34;, str(nodeToken))
-                ]
+            nwc = os.getenv(&#39;NWC&#39;, None)
+            if nodeToken or nwc:
+                metadata=[]
+                if nwc:
+                    metadata.append((&#34;nwc&#34;, str(nwc)))                
+                if nodeToken:
+                    metadata.append((&#34;authorization&#34;, str(nodeToken)))                    
                 if interceptors is None: interceptors=[]
                 interceptors.append(HeaderAdderInterceptor0(metadata))
                 interceptors.append(HeaderAdderInterceptor1(metadata))
                 interceptors.append(HeaderAdderInterceptor2(metadata))
                 interceptors.append(HeaderAdderInterceptor3(metadata))
                 
-
+            if nwc:
+                self.getLogger().info(&#34;This node can receive payments&#34;)
+            else: 
+                self.getLogger().warn(&#34;This node is not enabled to receive payments. Please provide a NWC URL&#34;)
+                
             if self.poolSsl:
                 self.channel = grpc.aio.secure_channel(self.poolAddress+&#34;:&#34;+str(self.poolPort), grpc.ssl_channel_credentials(),options,interceptors=interceptors)
             else:
@@ -872,6 +893,9 @@ The node can be configured with the following environment variables:
             client = self._getClient()
             jobs=[]
             filter = runner.getFilter()
+            meta = runner.getMeta()
+            prices = &#34;prices&#34; in meta and meta[&#34;prices&#34;] or None
+
             self.lockedJobs = [x for x in self.lockedJobs if time.time()-x[1] &lt; 60]
             jobs.extend((await client.getPendingJobs(rpc_pb2.RpcGetPendingJobs(
                 filterByRunOn =  filter[&#34;filterByRunOn&#34;] if &#34;filterByRunOn&#34; in filter else None,
@@ -879,6 +903,7 @@ The node can be configured with the following environment variables:
                 filterByDescription = filter[&#34;filterByDescription&#34;] if &#34;filterByDescription&#34; in filter else None,
                 filterById = filter[&#34;filterById&#34;] if &#34;filterById&#34; in filter else None,
                 filterByKind  = filter[&#34;filterByKind&#34;] if &#34;filterByKind&#34; in filter else None,
+                filterByBids = prices,
                 wait=60000,
                 # exclude failed jobs
                 excludeId = [x[0] for x in self.lockedJobs]
@@ -986,7 +1011,7 @@ The node can be configured with the following environment variables:
                     reg[&#34;nextAnnouncementTimestamp&#34;] = int(time.time()*1000) + 5000
         except Exception as e:
             self.getLogger().error(&#34;Error reannouncing &#34;+str(e), None)
-        await asyncio.sleep(5000.0/1000.0)
+        await asyncio.sleep(5)
         asyncio.create_task(self.reannounce())
   
     async def _loop(self):
@@ -1112,7 +1137,7 @@ The node can be configured with the following environment variables:
                 reg[&#34;nextAnnouncementTimestamp&#34;] = int(time.time()*1000) + 5000
     except Exception as e:
         self.getLogger().error(&#34;Error reannouncing &#34;+str(e), None)
-    await asyncio.sleep(5000.0/1000.0)
+    await asyncio.sleep(5)
     asyncio.create_task(self.reannounce())</code></pre>
 </details>
 </dd>
