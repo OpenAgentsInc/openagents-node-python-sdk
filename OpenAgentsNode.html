@@ -107,7 +107,16 @@ class OpenAgentsNode:
         self.logger = None
         self.loopInterval = 100
         
-    
+        self.NWC = os.getenv(&#39;NWC&#39;, None)
+        if self.NWC and &#34;prices&#34; not in self.meta:
+            self.meta[&#34;prices&#34;] = [
+                {
+                    &#34;amount&#34;: int(os.getenv(&#39;PRICE_SATS&#39;, os.getenv(&#39;PRICE_MSATS&#39;, &#34;3000&#34;))),
+                    &#34;currency&#34;: os.getenv(&#39;CURRENCY&#39;, &#34;bitcoin&#34;),
+                    &#34;protocol&#34;: os.getenv(&#39;PROTOCOL&#39;, &#34;lightning&#34;),
+                }
+            ]
+
         self.nodeName = self.meta[&#34;name&#34;]
         self.nodeIcon =  self.meta[&#34;picture&#34;]
         self.nodeVersion =  self.meta[&#34;version&#34;]
@@ -159,7 +168,7 @@ class OpenAgentsNode:
 
             interceptors=None
             nodeToken = os.getenv(&#39;NODE_TOKEN&#39;, None)
-            nwc = os.getenv(&#39;NWC&#39;, None)
+            nwc = self.NWC
             if nodeToken or nwc:
                 metadata=[]
                 if nwc:
@@ -766,7 +775,16 @@ The node can be configured with the following environment variables:
         self.logger = None
         self.loopInterval = 100
         
-    
+        self.NWC = os.getenv(&#39;NWC&#39;, None)
+        if self.NWC and &#34;prices&#34; not in self.meta:
+            self.meta[&#34;prices&#34;] = [
+                {
+                    &#34;amount&#34;: int(os.getenv(&#39;PRICE_SATS&#39;, os.getenv(&#39;PRICE_MSATS&#39;, &#34;3000&#34;))),
+                    &#34;currency&#34;: os.getenv(&#39;CURRENCY&#39;, &#34;bitcoin&#34;),
+                    &#34;protocol&#34;: os.getenv(&#39;PROTOCOL&#39;, &#34;lightning&#34;),
+                }
+            ]
+
         self.nodeName = self.meta[&#34;name&#34;]
         self.nodeIcon =  self.meta[&#34;picture&#34;]
         self.nodeVersion =  self.meta[&#34;version&#34;]
@@ -818,7 +836,7 @@ The node can be configured with the following environment variables:
 
             interceptors=None
             nodeToken = os.getenv(&#39;NODE_TOKEN&#39;, None)
-            nwc = os.getenv(&#39;NWC&#39;, None)
+            nwc = self.NWC
             if nodeToken or nwc:
                 metadata=[]
                 if nwc:
