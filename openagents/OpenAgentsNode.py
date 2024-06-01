@@ -79,7 +79,16 @@ class OpenAgentsNode:
         self.logger = None
         self.loopInterval = 100
         
-    
+        self.NWC = os.getenv('NWC', None)
+        if self.NWC and "prices" not in self.meta:
+            self.meta["prices"] = [
+                {
+                    "amount": int(os.getenv('PRICE_SATS', os.getenv('PRICE_MSATS', "3000"))),
+                    "currency": os.getenv('CURRENCY', "bitcoin"),
+                    "protocol": os.getenv('PROTOCOL', "lightning"),
+                }
+            ]
+
         self.nodeName = self.meta["name"]
         self.nodeIcon =  self.meta["picture"]
         self.nodeVersion =  self.meta["version"]
@@ -131,7 +140,7 @@ class OpenAgentsNode:
 
             interceptors=None
             nodeToken = os.getenv('NODE_TOKEN', None)
-            nwc = os.getenv('NWC', None)
+            nwc = self.NWC
             if nodeToken or nwc:
                 metadata=[]
                 if nwc:
