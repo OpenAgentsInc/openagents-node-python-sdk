@@ -20,7 +20,7 @@ setup(
     description='A Python SDK for OpenAgents Nodes',
     author='OpenAgents',
     setup_requires=['pytest-runner'],
-    tests_require=['pytest==8.2.0'],
+    tests_require=['pytest==8.2.2'],
     install_requires=[
         "openagents-grpc-proto",
         "packaging",
